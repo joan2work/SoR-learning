@@ -11,13 +11,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
-        .space-menu-item, .word-card { transition: all 0.2s ease-in-out; }
+        .space-menu-item, .word-card, .category-btn { transition: all 0.2s ease-in-out; }
         .word-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
         .space-menu-item:hover { background-color: #f1f5f9; color: #1e293b; }
         .space-menu-item.active { background-color: #eef2ff; color: #4338ca; font-weight: 600; }
+        .category-btn.active { background-color: #4f46e5; color: white; }
         #word-details-canvas { transition: all 0.3s ease-in-out; position: relative; }
-        .search-results { display: none; position: absolute; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); width: 100%; z-index: 10; }
-        .search-results.active { display: block; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -28,9 +27,8 @@
         <header class="mb-6 md:mb-8">
             <div class="flex flex-wrap gap-4 justify-between items-center">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual AI</h1>
-                 <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-slate-600">句型結構:</span>
-                    <select id="pattern-selector" class="rounded-md border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                 <div id="controls-container" class="flex items-center gap-2 flex-wrap">
+                    <!-- 控制項將由 JS 動態生成 -->
                  </div>
             </div>
         </header>
@@ -62,7 +60,7 @@
         const wordGrid = document.getElementById('word-grid');
         const sentenceConstructor = document.getElementById('sentence-constructor');
         const wordDetailsCanvas = document.getElementById('word-details-canvas');
-        const patternSelector = document.getElementById('pattern-selector');
+        const controlsContainer = document.getElementById('controls-container');
         
         // --- 核心函數 ---
         async function init() {
@@ -71,25 +69,29 @@
             
             const patterns = DB.patterns || [];
             if (patterns.length === 0) {
-                displayError("很抱歉，無法從您的 Google Sheet 載入任何有效的句型資料。<br>請檢查您的「句型庫」工作表是否有內容。");
+                displayError("很抱歉，無法從您的 Google Sheet 載入任何有效的句型資料。<br>請檢查您的「句型庫」工作表是否有內容且欄位名稱正確。");
                 return;
             }
-            const firstPattern = patterns[0];
+            
+            const firstCategory = patterns[0]?.句型分類 || null;
+            const patternsForFirstCategory = firstCategory ? patterns.filter(p => p.句型分類 === firstCategory) : [];
+            const firstPattern = patternsForFirstCategory[0] || null;
+
             state = {
+                currentCategory: firstCategory,
                 currentPattern: firstPattern,
                 activeSpace: (DB.spaces[0] || {}).情境名稱 || '未分類',
                 selectedSubject: 'I',
                 selectedWords: [], 
                 isLoadingAi: false,
             };
-            populatePatternSelector();
+            
             setupEventListeners();
             render();
         }
 
         async function fetchDataFromGoogleSheet() {
-            // ⚠️ 請將下方的 'YOUR_APPS_SCRIPT_URL' 換成您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; 
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; // ⚠️ 請貼上您的 Apps Script 網址
             
             try {
                 if (appsScriptUrl === 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec') {
@@ -116,7 +118,7 @@
             try {
                  const response = await fetch(appsScriptUrl, {
                     method: 'POST',
-                    mode: 'cors', // Important for cross-origin requests
+                    mode: 'cors', 
                     credentials: 'omit',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ word: wordData.單字, contexts: DB.spaces.map(s => s.情境名稱) })
@@ -155,15 +157,28 @@
 
         function render() {
             if (!state.currentPattern) return;
+            renderControls();
             renderSentenceConstructor();
             renderWordDetailsCanvas();
             renderSpaceMenu();
             renderWordGrid();
         }
         
-        function populatePatternSelector() {
-            patternSelector.innerHTML = DB.patterns.map(p => `<option value="${p.句型名稱}">${p.句型名稱}</option>`).join('');
-            patternSelector.value = state.currentPattern.句型名稱;
+        function renderControls() {
+            const { currentCategory, currentPattern } = state;
+            const categories = [...new Set(DB.patterns.map(p => p.句型分類))];
+            const patternsForCategory = DB.patterns.filter(p => p.句型分類 === currentCategory);
+
+            let categoryButtonsHTML = `<div class="flex items-center gap-1 bg-slate-200 p-1 rounded-lg">
+                ${categories.map(cat => `<button data-category="${cat}" class="category-btn px-3 py-1 text-sm font-semibold rounded-md ${cat === currentCategory ? 'active' : 'text-slate-600'}">${cat}</button>`).join('')}
+            </div>`;
+
+            let patternSelectorHTML = `<select id="pattern-selector" class="rounded-md border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                ${patternsForCategory.map(p => `<option value="${p.句型名稱}">${p.句型名稱}</option>`).join('')}
+            </select>`;
+            
+            controlsContainer.innerHTML = categoryButtonsHTML + patternSelectorHTML;
+            document.getElementById('pattern-selector').value = currentPattern.句型名稱;
         }
 
         function renderSentenceConstructor() {
@@ -213,7 +228,7 @@
                     </div>
                 `).join('');
             } else {
-                wordDetailsCanvas.innerHTML = `<div class="text-center text-slate-400"><i class="fas fa-leaf text-2xl mb-2"></i><p>請從下方選擇單字來建構句子</p></div>`;
+                wordDetailsCanvas.innerHTML = ``;
             }
         }
 
@@ -274,6 +289,14 @@
                 }
             });
             
+            controlsContainer.addEventListener('change', e => {
+                if(e.target.id === 'pattern-selector') {
+                    const selectedPatternName = e.target.value;
+                    const newPattern = DB.patterns.find(p => p.句型名稱 === selectedPatternName);
+                    if(newPattern) setState({ currentPattern: newPattern, selectedWords: [] });
+                }
+            });
+
             sentenceConstructor.addEventListener('change', e => {
                 if(e.target.id === 'subject-selector') {
                     setState({ selectedSubject: e.target.value });
@@ -289,12 +312,19 @@
                     setState({ selectedWords: newSelectedWords });
                  }
             });
-
-            patternSelector.addEventListener('change', e => {
-                const selectedPatternName = e.target.value;
-                const newPattern = DB.patterns.find(p => p.句型名稱 === selectedPatternName);
-                if(newPattern) {
-                    setState({ currentPattern: newPattern, selectedWords: [] });
+            
+            controlsContainer.addEventListener('click', e => {
+                const categoryBtn = e.target.closest('.category-btn');
+                if (categoryBtn) {
+                    const category = categoryBtn.dataset.category;
+                    const patternsForCategory = DB.patterns.filter(p => p.句型分類 === category);
+                    if (patternsForCategory.length > 0) {
+                        setState({ 
+                            currentCategory: category, 
+                            currentPattern: patternsForCategory[0],
+                            selectedWords: [] 
+                        });
+                    }
                 }
             });
         }
