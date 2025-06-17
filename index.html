@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contextual - 您的情境式英語地圖</title>
+    <title>很有將練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
     <div id="app-container" class="max-w-7xl mx-auto p-4 md:p-6">
         <header class="mb-6 md:mb-8">
             <div class="flex flex-wrap gap-4 justify-between items-center">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual AI</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">很有將練習</h1>
                  <div id="controls-container" class="flex items-center gap-2 flex-wrap">
                     <!-- 控制項將由 JS 動態生成 -->
                  </div>
@@ -252,10 +252,16 @@
             const nextRequiredPoS = requiredPoSList[selectedWords.length] || requiredPoSList[0];
 
             document.getElementById('word-list-title').textContent = `${activeSpace}的相關單字 (${nextRequiredPoS})`;
-            const words = DB.words.filter(w => w.詞性 === nextRequiredPoS && w.情境 === activeSpace);
             
-            if (words.length > 0) {
-                wordGrid.innerHTML = words.map(wordData => {
+            // **FIXED**: New filtering logic
+            let words = DB.words.filter(w => w.詞性 === nextRequiredPoS);
+            let wordsInSpace = words.filter(w => w.情境 === activeSpace);
+            
+            // If no words found for the specific context, fall back to showing all words of the required PoS.
+            const finalWordsToShow = wordsInSpace.length > 0 ? wordsInSpace : words;
+
+            if (finalWordsToShow.length > 0) {
+                wordGrid.innerHTML = finalWordsToShow.map(wordData => {
                     const isSelected = selectedWords.some(w => w.單字 === wordData.單字);
                     return `
                     <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 ${isSelected ? 'border-indigo-500' : 'border-slate-200'}" data-word='${JSON.stringify(wordData)}'>
@@ -263,7 +269,7 @@
                     </div>`
                 }).join('');
             } else {
-                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4"><i class="far fa-surprise"></i></div><h3 class="text-xl font-semibold text-slate-700">喔喔！</h3><p class="text-slate-500 mt-1">在「${activeSpace}」情境中找不到詞性為「${nextRequiredPoS}」的單字。</p></div>`;
+                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4"><i class="far fa-surprise"></i></div><h3 class="text-xl font-semibold text-slate-700">喔喔！</h3><p class="text-slate-500 mt-1">在您的單字庫中找不到詞性為「${nextRequiredPoS}」的單字。</p></div>`;
             }
         }
 
