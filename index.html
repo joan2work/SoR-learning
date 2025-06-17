@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>很有將練習</title>
+    <title>Contextual - 您的情境式英語地圖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,8 +73,8 @@
                 return;
             }
             
-            const firstCategory = patterns[0]?.句型分類 || null;
-            const patternsForFirstCategory = firstCategory ? patterns.filter(p => p.句型分類 === firstCategory) : [];
+            const firstCategory = patterns[0]?.['句型分類'] || null;
+            const patternsForFirstCategory = firstCategory ? patterns.filter(p => p['句型分類'] === firstCategory) : [];
             const firstPattern = patternsForFirstCategory[0] || null;
 
             state = {
@@ -166,8 +166,8 @@
         
         function renderControls() {
             const { currentCategory, currentPattern } = state;
-            const categories = [...new Set(DB.patterns.map(p => p.句型分類))];
-            const patternsForCategory = DB.patterns.filter(p => p.句型分類 === currentCategory);
+            const categories = [...new Set(DB.patterns.map(p => p['句型分類']))];
+            const patternsForCategory = DB.patterns.filter(p => p['句型分類'] === currentCategory);
 
             let categoryButtonsHTML = `<div class="flex items-center gap-1 bg-slate-200 p-1 rounded-lg">
                 ${categories.map(cat => `<button data-category="${cat}" class="category-btn px-3 py-1 text-sm font-semibold rounded-md ${cat === currentCategory ? 'active' : 'text-slate-600'}">${cat}</button>`).join('')}
@@ -238,7 +238,7 @@
             const { activeSpace } = state;
             spaceMenu.innerHTML = DB.spaces.map(space => {
                 const wordCount = DB.words.filter(w => w.情境 === space.情境名稱).length;
-                const iconClass = space['icon (Font Awesome)'] || 'fa-solid fa-folder'; // **FIXED**
+                const iconClass = space['icon (Font Awesome)'] || 'fa-solid fa-folder';
                 return `<a href="#" class="space-menu-item flex items-center justify-between px-4 py-2 text-slate-600 rounded-md ${space.情境名稱 === activeSpace ? 'active' : ''}" data-space="${space.情境名稱}">
                     <div class="flex items-center"><i class="${iconClass} mr-3 text-lg w-5 text-center"></i><span>${space.情境名稱}</span></div>
                     <span class="text-xs font-semibold bg-slate-200 rounded-full px-2 py-0.5">${wordCount}</span>
@@ -248,11 +248,11 @@
 
         function renderWordGrid() {
             const { currentPattern, activeSpace, selectedWords } = state;
-            const requiredPoSList = (currentPattern.所需詞性 || "").split(';').map(p => p.trim());
+            const requiredPoSList = (currentPattern['所需詞性 (用;分隔)'] || "").split(';').map(p => p.trim());
             const nextRequiredPoS = requiredPoSList[selectedWords.length] || requiredPoSList[0];
 
             document.getElementById('word-list-title').textContent = `${activeSpace}的相關單字 (${nextRequiredPoS})`;
-            const words = DB.words.filter(w => w.詞性 === nextRequiredPoS);
+            const words = DB.words.filter(w => w.詞性 === nextRequiredPoS && w.情境 === activeSpace);
             
             if (words.length > 0) {
                 wordGrid.innerHTML = words.map(wordData => {
@@ -263,7 +263,7 @@
                     </div>`
                 }).join('');
             } else {
-                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4"><i class="far fa-surprise"></i></div><h3 class="text-xl font-semibold text-slate-700">喔喔！</h3><p class="text-slate-500 mt-1">在您的單字庫中找不到詞性為「${nextRequiredPoS}」的單字。</p></div>`;
+                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4"><i class="far fa-surprise"></i></div><h3 class="text-xl font-semibold text-slate-700">喔喔！</h3><p class="text-slate-500 mt-1">在「${activeSpace}」情境中找不到詞性為「${nextRequiredPoS}」的單字。</p></div>`;
             }
         }
 
@@ -320,7 +320,7 @@
                 const categoryBtn = e.target.closest('.category-btn');
                 if (categoryBtn) {
                     const category = categoryBtn.dataset.category;
-                    const patternsForCategory = DB.patterns.filter(p => p.句型分類 === category);
+                    const patternsForCategory = DB.patterns.filter(p => p['句型分類'] === category);
                     if (patternsForCategory.length > 0) {
                         setState({ 
                             currentCategory: category, 
