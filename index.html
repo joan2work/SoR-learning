@@ -234,7 +234,7 @@
 
             try {
                 // 如果 URL 尚未替換，則使用模擬資料
-                if (appsScriptUrl === 'YOUR_APPS_SCRIPT_URL') {
+                if (appsScriptUrl === 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec') {
                     console.warn("偵測到預設網址，將使用模擬資料。請記得替換成您自己的 Apps Script 網址。");
                     const csvData = `句型,情境,單字,詞性,標籤,發音,AI老師點評,道地例句,我的例句,我的發音筆記,發音筆記圖檔\nI am [adjective],在健身房/運動時,tired,adjective,#感受,/taɪərd/,"非常常見的詞, 用來形容身體或精神上的疲勞。可以用在幾乎任何情境。",I'm too tired to go out tonight.,,,\nI am [adjective],在辦公室,productive,adjective,#效率,/prəˈdʌktɪv/,"用來描述一段時間或某個人有效率地完成了很多工作。是績效評估中的常見詞彙。",It was a very productive meeting.,ㄆㄛ ㄉㄚˋ ㄎ ㄊㄧˇ ㄈ,https://placehold.co/300x150/10b981/ffffff?text=Pronunciation+Image`;
                     const parsedData = parseCsv(csvData);
