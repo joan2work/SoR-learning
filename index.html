@@ -95,7 +95,8 @@
 
         async function fetchDataFromGoogleSheet() {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec';
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec'; 
+            
             try {
                 const response = await fetch(appsScriptUrl);
                 if (!response.ok) throw new Error('網路回應錯誤: ' + response.statusText);
@@ -118,7 +119,8 @@
         
         async function fetchAiDataForWord(wordData) {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec';       
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec';
+            
             // 【CHANGED】將isLoadingAi設置在更高層級，避免重複渲染
             if (state.isLoadingAi) return;
             setState({ isLoadingAi: true, selectedWords: [...state.selectedWords, { 單字: wordData.單字, 詞性: wordData.詞性 }] }); // 先放一個佔位符
@@ -324,11 +326,20 @@
             });
 
             wordGrid.addEventListener('click', e => {
+                // --- DEBUGGING CODE START ---
+                console.log("1. wordGrid 的點擊事件已觸發！"); 
+
                 const wordCard = e.target.closest('.word-card[data-word]');
+                
                 if (wordCard && wordCard.dataset.word) {
+                    console.log("2. 成功找到 wordCard，準備呼叫 AI..."); 
+                    
                     const clickedWord = JSON.parse(wordCard.dataset.word);
                     fetchAiDataForWord(clickedWord);
+                } else {
+                    console.log("2. 喔喔，點擊後沒有找到對應的 wordCard。"); 
                 }
+                // --- DEBUGGING CODE END ---
             });
             
             controlsContainer.addEventListener('change', e => {
