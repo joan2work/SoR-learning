@@ -3,612 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoR_很有將練習</title>
+    <title>Contextual - 您的情境式英語地圖</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc; /* Tailwind gray-50 */
-        }
-        .space-menu-item, .word-card {
-            transition: all 0.2s ease-in-out;
-        }
-        .word-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        .space-menu-item:hover {
-             background-color: #f1f5f9; /* gray-100 */
-             color: #1e293b; /* gray-800 */
-        }
-        .space-menu-item.active {
-            background-color: #eef2ff; /* indigo-50 */
-            color: #4338ca; /* indigo-700 */
-            font-weight: 600;
-        }
-        .view {
-            display: none;
-        }
-        .view.active {
-            display: block;
-        }
-        #word-details-canvas {
-            transition: all 0.3s ease-in-out;
-            position: relative;
-        }
-        .search-results {
-            display: none;
-            position: absolute;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            width: 100%;
-            z-index: 10;
-        }
-        .search-results.active {
-            display: block;
-        }
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-        .loader {
-            border: 4px solid #f3f3f3; /* Light grey */
-            border-top: 4px solid #4f46e5; /* Indigo */
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f8fafc; }
+        .space-menu-item, .word-card { transition: all 0.2s ease-in-out; }
+        .word-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .space-menu-item:hover { background-color: #f1f5f9; color: #1e293b; }
+        .space-menu-item.active { background-color: #eef2ff; color: #4338ca; font-weight: 600; }
+        #word-details-canvas { transition: all 0.3s ease-in-out; position: relative; }
+        .search-results { display: none; position: absolute; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); width: 100%; z-index: 10; }
+        .search-results.active { display: block; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="text-slate-800">
 
     <div id="app-container" class="max-w-7xl mx-auto p-4 md:p-6">
-
-        <!-- 主畫面 / 工作區 -->
-        <div data-view="workspace" class="view active">
-            <header class="mb-6 md:mb-8">
-                <div class="flex flex-wrap gap-4 justify-between items-center">
-                    <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual</h1>
-                    <div class="flex-grow max-w-md relative">
-                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                        <input type="text" id="pattern-search-input" placeholder="搜尋其他句型..." class="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none">
-                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden">&times;</button>
-                        <div id="search-results-list" class="search-results mt-1"></div>
-                    </div>
-                    <button id="add-new-pattern-btn" class="bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors shadow-sm text-sm">
-                        <i class="fas fa-plus mr-1"></i> 新增句型
-                    </button>
-                </div>
-            </header>
-            <main>
-                <!-- 頂部畫布 -->
-                <div id="word-details-canvas" class="bg-white rounded-2xl shadow-lg mb-8 p-6 md:p-8 min-h-[200px] flex items-center justify-center">
-                   <!-- 選擇單字後的詳細內容會顯示在這裡 -->
-                </div>
-
-                <!-- 主要內容區：兩欄式佈局 -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                    <!-- 左欄：情境選單 -->
-                    <aside class="md:col-span-1">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-slate-800">情境選單</h3>
-                            <button id="edit-spaces-btn" class="text-sm text-slate-500 hover:text-indigo-600">編輯</button>
-                        </div>
-                        <div id="space-menu" class="space-y-2">
-                            <!-- 情境項目將由 JS 動態生成 -->
-                        </div>
-                    </aside>
-
-                    <!-- 右欄：單字列表 -->
-                    <div class="md:col-span-3">
-                         <div class="flex justify-between items-center mb-4">
-                            <h3 id="word-list-title" class="text-lg font-semibold text-slate-800">相關單字</h3>
-                            <button id="add-new-card-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm">
-                                <i class="fas fa-plus mr-1"></i> 新增單字
-                            </button>
-                        </div>
-                        <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                            <!-- 單字卡片將由 JS 動態生成 -->
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <!-- 卡片編輯/新增彈窗 (Modal) -->
-        <div data-view="cardModal" class="view fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-50">
-            <div id="card-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                 <!-- 卡片編輯表單會顯示在這裡 -->
+        <header class="mb-6 md:mb-8">
+            <div class="flex flex-wrap gap-4 justify-between items-center">
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual AI</h1>
+                 <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-slate-600">句型結構:</span>
+                    <select id="pattern-selector" class="rounded-md border-slate-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+                 </div>
             </div>
-        </div>
-        
-        <!-- 通用確認彈窗 -->
-        <div id="confirmation-modal" class="modal-overlay hidden">
-            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-                <h3 id="confirmation-title" class="text-lg font-bold mb-4"></h3>
-                <p id="confirmation-message" class="text-slate-600 mb-6"></p>
-                <div class="flex justify-end space-x-3">
-                    <button id="confirm-cancel-btn" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300">取消</button>
-                    <button id="confirm-ok-btn" class="bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700">確認</button>
+        </header>
+        <main>
+            <div id="sentence-constructor" class="bg-white rounded-2xl shadow-lg mb-8 p-6 md:p-8 flex items-center justify-center text-center"></div>
+            <div id="word-details-canvas" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"></div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <aside class="md:col-span-1">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-4">情境選單</h3>
+                    <div id="space-menu" class="space-y-2"></div>
+                </aside>
+                <div class="md:col-span-3">
+                     <h3 id="word-list-title" class="text-lg font-semibold text-slate-800 mb-4">相關單字</h3>
+                    <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"></div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
 
     <script>
-        // --- 資料模型 (Data Model) ---
-        let ALL_SPACES = ["在辦公室", "在健身房/運動時", "在餐廳/咖啡廳", "在家裡", "在社交場合", "在超市購物", "未分類"];
-        let appData = {};
-
-        const fakeAiData = {
-            "tired": { pronunciation: "/taɪərd/", aiNotes: "非常常見的詞，用來形容身體或精神上的疲勞。可以用在幾乎任何情境。", examples: ["I'm too tired to go out tonight.", "She has a tired look on her face."] },
-            "happy": { pronunciation: "/ˈhæpi/", aiNotes: "表達開心、滿足的情緒。是正面情緒中最基礎也最泛用的詞。", examples: ["He was a happy child.", "She looks very happy today."] },
-            "fresh": { pronunciation: "/frɛʃ/", aiNotes: "常用來形容食物新鮮，也可以指空氣清新或想法新穎。", examples: ["These vegetables are very fresh.", "I need some fresh air."] },
-            "confident": { pronunciation: "/ˈkɑːnfɪdənt/", aiNotes: "形容對自己的能力、特質或判斷有信心。在職場和社交場合都非常實用。", examples: ["She is a confident and ambitious woman.", "I'm confident that we can win."] }
-        };
-
-        const wordToSpaceDB = {
-            "productive": "在辦公室", "versatile": "在辦公室", "deadline": "在辦公室",
-            "tired": "在健身房/運動時", "sore": "在健身房/運動時",
-            "delicious": "在餐廳/咖啡廳",
-            "cozy": "在家裡", "relaxed": "在家裡",
-            "social": "在社交場合", "confident": "在社交場合",
-            "fresh": "在超市購物", "ripe": "在超市購物", "aisle": "在超市購物",
-        };
+        // --- 全域資料庫 ---
+        let DB = { patterns: [], words: [], spaces: [] };
         
-        // --- DOM 節點 (DOM Elements) ---
-        const views = {
-            workspace: document.querySelector('[data-view="workspace"]'),
-            cardModal: document.querySelector('[data-view="cardModal"]')
-        };
-        const spaceMenu = document.getElementById('space-menu');
-        const wordGrid = document.getElementById('word-grid');
-        const wordDetailsCanvas = document.getElementById('word-details-canvas');
-        const cardModalContent = document.getElementById('card-modal-content');
-        const patternSearchInput = document.getElementById('pattern-search-input');
-        const searchResultsList = document.getElementById('search-results-list');
-        const clearSearchBtn = document.getElementById('clear-search-btn');
-        const confirmationModal = document.getElementById('confirmation-modal');
-
-        // --- 應用程式狀態 (Single Source of Truth) ---
+        // --- 應用程式狀態 ---
         let state = {};
 
+        // --- DOM 節點 ---
+        const spaceMenu = document.getElementById('space-menu');
+        const wordGrid = document.getElementById('word-grid');
+        const sentenceConstructor = document.getElementById('sentence-constructor');
+        const wordDetailsCanvas = document.getElementById('word-details-canvas');
+        const patternSelector = document.getElementById('pattern-selector');
+        
         // --- 核心函數 ---
-
-        function processSheetData(data) {
-            const newAppData = {};
-            data.forEach(row => {
-                const pattern = row.句型;
-                const space = row.情境;
-                
-                if (!pattern || !space) return;
-                if (!newAppData[pattern]) newAppData[pattern] = {};
-                
-                ALL_SPACES.forEach(s => {
-                    if (!newAppData[pattern][s]) newAppData[pattern][s] = [];
-                });
-                
-                newAppData[pattern][space].push({
-                    word: row.單字,
-                    partOfSpeech: row.詞性,
-                    tags: row.標籤 ? row.標籤.split(';').filter(t => t) : [],
-                    imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=${row.單字}`,
-                    myImageUrl: "",
-                    pronunciation: row.發音,
-                    myPronunciation: row.我的發音筆記,
-                    myPronunciationImageUrl: row.發音筆記圖檔,
-                    aiNotes: row.AI老師點評,
-                    examples: row.道地例句 ? row.道地例句.split(';').filter(t => t) : [],
-                    myExamples: row.我的例句 ? row.我的例句.split(';').filter(t => t) : []
-                });
-            });
-            appData = newAppData;
-        }
-
-        async function fetchDataFromGoogleSheet() {
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; 
-            
-            wordDetailsCanvas.innerHTML = `<div class="loader"></div>`;
-
-            try {
-                const response = await fetch(appsScriptUrl);
-                if (!response.ok) {
-                    throw new Error('網路回應錯誤: ' + response.statusText);
-                }
-                const data = await response.json();
-                processSheetData(data); 
-            } catch (error) {
-                console.error("無法從 Google Sheet 讀取資料:", error);
-                wordDetailsCanvas.innerHTML = `<div class="p-4 text-center text-red-500">很抱歉，無法從 Google Sheet 讀取資料。<br>請確認您的 Apps Script 網址是否正確，且共用設定為「知道連結的任何人」。</div>`;
-            }
-        }
-        
-        function parseCsv(csvText) {
-             const lines = csvText.trim().split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                const row = {};
-                let currentLine = lines[i];
-                let inQuotes = false;
-                let value = '';
-                let headerIndex = 0;
-                for (let j = 0; j < currentLine.length; j++) {
-                    const char = currentLine[j];
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        row[headers[headerIndex]] = value.trim();
-                        value = '';
-                        headerIndex++;
-                    } else {
-                        value += char;
-                    }
-                }
-                row[headers[headerIndex]] = value.trim();
-                data.push(row);
-            }
-            return data;
-        }
-        
-        function setState(newState) { Object.assign(state, newState); render(); }
-
-        function render() {
-            try {
-                Object.keys(views).forEach(viewKey => {
-                    if(views[viewKey]) {
-                       views[viewKey].style.display = viewKey === state.currentView ? (viewKey === 'cardModal' ? 'flex' : 'block') : 'none';
-                    }
-                });
-                switch(state.currentView) {
-                    case 'workspace': renderWorkspaceView(); break;
-                    case 'cardModal': renderCardModal(); break;
-                }
-            } catch (error) {
-                console.error("渲染時發生錯誤 (Error during render):", error);
-                document.body.innerHTML = `<div class="p-8 text-red-500">很抱歉，頁面渲染發生嚴重錯誤，請檢查資料或程式碼。<br>錯誤訊息: ${error.message}</div>`;
-            }
-        }
-        
-        function renderWorkspaceView() {
-            if (!state.currentPattern || !appData[state.currentPattern]) {
-                return;
-            }
-            renderSpaceMenu();
-            renderWordGrid();
-            renderWordDetailCanvas();
-        }
-
-        function renderSpaceMenu() {
-            const { activeSpace, isEditingSpaces } = state;
-            const spaceIcons = {"在辦公室": "🏢", "在健身房/運動時": "🏋️", "在餐廳/咖啡廳": "☕️", "在家裡": "🏠", "在社交場合": "🤝", "在超市購物": "�", "未分類": "📂"};
-            spaceMenu.innerHTML = ALL_SPACES.map(spaceName => `
-                <div class="flex items-center group">
-                    <a href="#" class="space-menu-item flex-grow flex items-center px-4 py-2 text-slate-600 rounded-md ${spaceName === activeSpace ? 'active' : ''}" data-space="${spaceName}">
-                        <span class="mr-3 text-lg">${spaceIcons[spaceName] || '📁'}</span>
-                        <span>${spaceName}</span>
-                    </a>
-                    ${isEditingSpaces && spaceName !== '未分類' ? `<button data-action="delete-space" data-space="${spaceName}" class="ml-2 text-slate-400 hover:text-red-500 hidden group-hover:block">&times;</button>` : ''}
-                </div>
-            `).join('');
-            
-            if (isEditingSpaces) {
-                spaceMenu.innerHTML += `
-                    <div class="mt-2">
-                        <input type="text" id="new-space-input" placeholder="新增情境..." class="w-full text-sm p-1 border rounded-md">
-                        <button data-action="add-space" class="w-full mt-1 text-sm bg-slate-600 text-white rounded-md py-1">新增</button>
-                    </div>`;
-            }
-        }
-
-        function renderWordGrid() {
-            const { currentPattern, activeSpace } = state;
-            if (!appData[currentPattern] || !appData[currentPattern][activeSpace]) return;
-            document.getElementById('word-list-title').textContent = `${activeSpace}的相關單字`;
-            const words = appData[currentPattern][activeSpace];
-            
-            if (words && words.length > 0) {
-                wordGrid.innerHTML = words.map(wordData => `
-                    <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 ${state.currentWord?.word === wordData.word ? 'border-indigo-500' : 'border-slate-200'}" data-word="${wordData.word}">
-                        <img src="${wordData.myImageUrl || wordData.imageUrl}" alt="${wordData.word}" class="w-full h-24 object-cover pointer-events-none" onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/ffffff?text=Image+Error';">
-                        <div class="p-3 pointer-events-none"><h4 class="font-bold text-slate-800">${wordData.word}</h4><p class="text-sm text-slate-500">${wordData.partOfSpeech}</p></div>
-                    </div>`).join('');
-            } else {
-                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4">📂</div><h3 class="text-xl font-semibold text-slate-700">這個情境還沒有單字</h3></div>`;
-            }
-        }
-
-        function renderWordDetailCanvas() {
-            const { currentPattern, currentWord } = state;
-            const patternHTML = currentPattern.replace(/\[(\w+)\]/g, `<span class="text-indigo-600 font-bold">${currentWord ? currentWord.word : '...'}</span>`);
-            
-            let canvasContentHTML = ``;
-            if (currentWord) {
-                 const pronunciationNoteHTML = currentWord.myPronunciationImageUrl 
-                    ? `<img src="${currentWord.myPronunciationImageUrl}" alt="發音筆記圖檔" class="mt-2 rounded-md max-w-full h-auto">`
-                    : (currentWord.myPronunciation || '無');
-
-                canvasContentHTML = `
-                <div class="flex gap-4 absolute top-4 right-4">
-                  <button data-action="edit-word" class="text-lg text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt"></i></button>
-                  <button data-action="delete-word" class="text-lg text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                  <button data-action="clear-canvas" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
-                </div>
-                <div class="w-full text-center">
-                    <p class="text-3xl lg:text-4xl text-slate-800 mt-1">${patternHTML}</p>
-                    <div class="mt-8 pt-6 border-t grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 text-left">
-                         <div class="space-y-4"><h3 class="font-bold text-lg">${currentWord.word} <span class="text-base font-normal text-slate-500">${currentWord.partOfSpeech}</span></h3><div><label class="font-semibold text-slate-800">發音</label><div class="mt-2 bg-slate-50 p-3 rounded-lg"><span class="text-slate-700">${currentWord.pronunciation}</span></div></div><div><label class="font-semibold text-slate-800">我的發音筆記</label><div class="mt-2 text-indigo-700 font-semibold">${pronunciationNoteHTML}</div></div></div>
-                        <div class="space-y-4"><div><label class="font-semibold text-slate-800">💡 AI 老師點評</label><div class="mt-2 bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg text-amber-900 text-sm">${currentWord.aiNotes}</div></div><div><label class="font-semibold text-slate-800">✍️ 我的例句</label><div class="mt-2 text-indigo-800 bg-indigo-50 p-3 rounded-lg">${currentWord.myExamples.join('<br>') || '無'}</div></div></div>
-                    </div>
-                </div>`;
-            } else {
-                canvasContentHTML = `<div class="text-center text-slate-500">
-                    <p class="text-3xl mb-4">${currentPattern.replace(/\[(\w+)\]/g, '<span class="text-slate-400">[$1]</span>')}</p>
-                    <i class="fas fa-hand-pointer text-3xl mb-2"></i>
-                    <p>請從下方選擇一張單字卡來查看詳細資訊</p>
-                </div>`;
-            }
-            wordDetailsCanvas.innerHTML = canvasContentHTML;
-        }
-        
-        function renderCardModal() {
-            const { activeSpace, currentWord, isEditMode } = state;
-            let cardData = isEditMode && !currentWord ? 
-                { word: "", partOfSpeech: "adjective", tags: [], imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=New+Word`, myImageUrl: "", pronunciation: "", myPronunciation: "", myPronunciationImageUrl: "", aiNotes: "AI 點評將在您儲存後生成...", examples: [], myExamples: [] } : 
-                {...currentWord}; 
-
-            cardModalContent.innerHTML = `<div class="p-6 md:p-8">
-                    <div class="flex justify-between items-start mb-4"><h2 class="text-2xl font-bold">${isEditMode && !currentWord ? '新增單字卡' : '編輯單字卡'}</h2><button data-action="close-card" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button></div>
-                    <div class="space-y-4">
-                        <div><label class="font-semibold">單字</label><input type="text" id="edit-word" value="${cardData.word}" placeholder="請輸入單字" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500"></div>
-                        <div><label class="font-semibold">歸屬情境</label>
-                             <select id="edit-space" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">
-                                <option value="ai" ${!currentWord ? 'selected' : ''}>AI 老師分類 (建議)</option>
-                                ${ALL_SPACES.map(space => `<option value="${space}" ${currentWord && space === activeSpace ? 'selected' : ''}>${space}</option>`).join('')}
-                             </select>
-                        </div>
-                        <div><label class="font-semibold">發音 (音標)</label><input type="text" id="edit-pronunciation" value="${cardData.pronunciation}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
-                        <div><label class="font-semibold">我的發音筆記 (注音)</label><input type="text" id="edit-myPronunciation" value="${cardData.myPronunciation || ''}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
-                        <div><label class="font-semibold">我的發音筆記 (圖檔網址)</label><input type="text" id="edit-myPronunciationImageUrl" value="${cardData.myPronunciationImageUrl || ''}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
-                        <div><label class="font-semibold">AI 老師點評</label><textarea id="edit-aiNotes" rows="3" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">${cardData.aiNotes}</textarea></div>
-                        <div><label class="font-semibold">我的例句 (一行一個)</label><textarea id="edit-myExamples" rows="3" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">${cardData.myExamples.join('\n')}</textarea></div>
-                    </div>
-                    <div class="mt-8 pt-4 border-t flex justify-end"><button data-action="save-card" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700">儲存</button></div>
-                </div>`;
-            
-            if (isEditMode && !currentWord) {
-                document.getElementById('edit-word').addEventListener('blur', (e) => {
-                    const enteredWord = e.target.value.trim().toLowerCase();
-                    const data = fakeAiData[enteredWord];
-                    if(data) {
-                        document.getElementById('edit-pronunciation').value = data.pronunciation;
-                        document.getElementById('edit-aiNotes').value = data.aiNotes;
-                    }
-                });
-            }
-        }
-
-        // --- Confirmation Modal Logic ---
-        function showConfirmation(title, message, onConfirm) {
-            document.getElementById('confirmation-title').textContent = title;
-            document.getElementById('confirmation-message').textContent = message;
-            confirmationModal.classList.remove('hidden');
-            const okBtn = document.getElementById('confirm-ok-btn');
-            const cancelBtn = document.getElementById('confirm-cancel-btn');
-            const okListener = () => { onConfirm(); hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
-            const cancelListener = () => { hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
-            okBtn.addEventListener('click', okListener);
-            cancelBtn.addEventListener('click', cancelListener);
-        }
-        function hideConfirmation() { confirmationModal.classList.add('hidden'); }
-        
-        // --- Event Handlers & Logic ---
-        function classifyWordToSpace(word) { return wordToSpaceDB[word.toLowerCase()]; }
-        
-        function setupEventListeners() {
-            document.body.addEventListener('click', e => {
-                const target = e.target;
-                const spaceMenuItem = target.closest('.space-menu-item[data-space]');
-                const wordCard = target.closest('.word-card[data-word]');
-                const actionTarget = target.closest('button, i');
-                const searchResultItem = target.closest('.search-result-item');
-                
-                if (spaceMenuItem) {
-                    e.preventDefault();
-                    setState({ activeSpace: spaceMenuItem.dataset.space, currentWord: null });
-                } else if (wordCard) {
-                    const wordName = wordCard.dataset.word;
-                    const { currentPattern, activeSpace } = state;
-                    const wordObject = appData[currentPattern][activeSpace].find(w => w.word === wordName);
-                    if (wordObject) { setState({ currentWord: wordObject }); }
-                } else if (searchResultItem) {
-                     const pattern = searchResultItem.dataset.pattern;
-                    patternSearchInput.value = '';
-                    searchResultsList.style.display = 'none';
-                    clearSearchBtn.classList.add('hidden');
-                    setState({ currentPattern: pattern, activeSpace: Object.keys(appData[pattern])[0], currentWord: null });
-                } else if (actionTarget) {
-                    const { action, space, pattern } = actionTarget.dataset;
-                    const id = actionTarget.id;
-                    if (id === 'add-new-card-btn') { setState({ currentView: 'cardModal', isEditMode: true, currentWord: null }); }
-                    else if (id === 'edit-spaces-btn') { setState({ isEditingSpaces: !state.isEditingSpaces }); }
-                    else if (id === 'add-new-pattern-btn') { alert('此功能開發中！'); }
-                    else if (action === 'delete-space') {
-                        showConfirmation('刪除情境', `確定要刪除 "${space}" 這個情境嗎？此情境的單字將被移至「未分類」。`, () => {
-                            ALL_SPACES = ALL_SPACES.filter(s => s !== space);
-                            Object.keys(appData).forEach(p => {
-                                const wordsToMove = appData[p][space] || [];
-                                if(!appData[p]['未分類']) appData[p]['未分類'] = [];
-                                appData[p]['未分類'].push(...wordsToMove);
-                                delete appData[p][space];
-                            });
-                            setState({ activeSpace: '未分類', currentWord: null });
-                        });
-                    } else if (action === 'add-space') {
-                        const newSpaceInput = document.getElementById('new-space-input');
-                        const newSpaceName = newSpaceInput.value.trim();
-                        if (newSpaceName && !ALL_SPACES.includes(newSpaceName)) {
-                            ALL_SPACES.push(newSpaceName);
-                            normalizeAppData();
-                            setState({ isEditingSpaces: false });
-                        } else if (!newSpaceName) { alert('請輸入情境名稱！'); } 
-                        else { alert(`情境 "${newSpaceName}" 已經存在！`); }
-                    } else if (action === 'delete-pattern') {
-                        e.stopPropagation();
-                        showConfirmation('刪除句型', `確定要刪除句型 "${pattern}" 嗎？`, () => {
-                            delete appData[pattern];
-                            searchResultsList.style.display = 'none';
-                            const defaultPattern = Object.keys(appData)[0] || null;
-                            const newActiveSpace = defaultPattern ? Object.keys(appData[defaultPattern])[0] : null;
-                            setState({ currentPattern: defaultPattern, activeSpace: newActiveSpace, currentWord: null });
-                        });
-                    } else if(action === 'clear-canvas' || action === 'edit-word' || action === 'delete-word') {
-                        handleCanvasAction(action);
-                    } else if(action === 'close-card' || action === 'save-card') {
-                        handleModalAction(action);
-                    }
-                } else if (!target.closest('.relative')) {
-                    searchResultsList.style.display = 'none';
-                }
-            });
-
-             patternSearchInput.addEventListener('keyup', () => {
-                const searchTerm = patternSearchInput.value.toLowerCase();
-                clearSearchBtn.classList.toggle('hidden', !searchTerm);
-                const results = Object.keys(appData).filter(p => p.toLowerCase().includes(searchTerm));
-                searchResultsList.style.display = results.length > 0 && searchTerm ? 'block' : 'none';
-                searchResultsList.innerHTML = results.map(p => `<div class="p-2 hover:bg-slate-100 cursor-pointer search-result-item" data-pattern="${p}">${p} <button data-action="delete-pattern" data-pattern="${p}" class="float-right text-slate-400 hover:text-red-500">&times;</button></div>`).join('');
-            });
-
-            clearSearchBtn.addEventListener('click', () => {
-                patternSearchInput.value = '';
-                clearSearchBtn.classList.add('hidden');
-                searchResultsList.style.display = 'none';
-                const defaultPattern = Object.keys(appData)[0];
-                setState({ currentPattern: defaultPattern, activeSpace: Object.keys(appData[defaultPattern])[0], currentWord: null });
-            });
-
-            views.cardModal.addEventListener('click', (e) => {
-                if (e.target === views.cardModal) { setState({ currentView: 'workspace' }); }
-            });
-        }
-        
-        function handleCanvasAction(action) {
-             switch(action) {
-                case 'clear-canvas': setState({ currentWord: null }); break;
-                case 'edit-word': setState({ currentView: 'cardModal', isEditMode: true }); break;
-                case 'delete-word':
-                    showConfirmation('刪除單字', `確定要刪除單字 "${state.currentWord.word}" 嗎？`, () => {
-                        const { currentPattern, activeSpace, currentWord } = state;
-                        const wordIndex = appData[currentPattern][activeSpace].findIndex(w => w.word === currentWord.word);
-                        if (wordIndex > -1) { appData[currentPattern][activeSpace].splice(wordIndex, 1); }
-                        setState({ currentWord: null });
-                    });
-                    break;
-            }
-        }
-        
-        function handleModalAction(action) {
-             switch (action) {
-                case 'close-card': setState({ currentView: 'workspace' }); break;
-                case 'save-card': saveCard(); break;
-            }
-        }
-        
-        function saveCard() {
-            const { currentPattern, currentWord } = state;
-            const originalWord = currentWord?.word;
-            const newWord = document.getElementById('edit-word').value.trim();
-
-            if (!newWord) { alert('「單字」為必填欄位！'); return; }
-            
-            const spaceDropdown = document.getElementById('edit-space');
-            let targetSpace = spaceDropdown.value;
-
-            if(targetSpace === 'ai') {
-                targetSpace = classifyWordToSpace(newWord) || '未分類';
-            }
-
-            if (!originalWord || originalWord !== newWord) {
-                 if (appData[currentPattern][targetSpace].some(w => w.word === newWord)) {
-                    alert(`單字 "${newWord}" 在情境 "${targetSpace}" 中已經存在！`); return;
-                 }
-            }
-            
-            const formData = {
-                word: newWord, myImageUrl: "", 
-                pronunciation: document.getElementById('edit-pronunciation').value.trim(),
-                myPronunciation: document.getElementById('edit-myPronunciation').value.trim(),
-                myPronunciationImageUrl: document.getElementById('edit-myPronunciationImageUrl').value.trim(),
-                aiNotes: document.getElementById('edit-aiNotes').value.trim(),
-                myExamples: document.getElementById('edit-myExamples').value.trim().split('\n').filter(line => line.trim() !== ''),
-            };
-
-            if (originalWord) { 
-                const wordIndex = appData[currentPattern][state.activeSpace].findIndex(w => w.word === originalWord);
-                if (wordIndex !== -1) {
-                    const oldCardData = appData[currentPattern][state.activeSpace][wordIndex];
-                    const cardToSave = { ...oldCardData, ...formData };
-                    if (targetSpace !== state.activeSpace) {
-                        appData[currentPattern][state.activeSpace].splice(wordIndex, 1);
-                        appData[currentPattern][targetSpace].push(cardToSave);
-                    } else {
-                        appData[currentPattern][state.activeSpace][wordIndex] = cardToSave;
-                    }
-                }
-            } else { 
-                const newCardData = { ...formData, partOfSpeech: 'adjective', tags: [`#${targetSpace}`], imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=${newWord || 'New'}`, examples: fakeAiData[newWord.toLowerCase()]?.examples || [] };
-                appData[currentPattern][targetSpace].push(newCardData);
-            }
-            
-            setState({ currentView: 'workspace', activeSpace: targetSpace, currentWord: null, isEditMode: false });
-        }
-
-        // --- 初始啟動 ---
         async function init() {
-            await fetchDataFromGoogleSheet(); // 等待資料載入
-
-            const patterns = Object.keys(appData);
-            const firstPattern = patterns.length > 0 ? patterns[0] : null;
-
-            if (!firstPattern) {
-                console.error("資料載入失敗或為空，無法初始化應用程式。");
-                document.getElementById('app-container').innerHTML = `<div class="p-4 text-center text-red-500">很抱歉，無法從您的 Google Sheet 載入任何有效的句型資料。<br>請檢查您的 Google Sheet 是否有內容，且欄位名稱是否正確。</div>`;
+            sentenceConstructor.innerHTML = `<div class="loader"></div>`;
+            await fetchDataFromGoogleSheet();
+            
+            const patterns = DB.patterns || [];
+            if (patterns.length === 0) {
+                displayError("很抱歉，無法從您的 Google Sheet 載入任何有效的句型資料。<br>請檢查您的「句型庫」工作表是否有內容。");
                 return;
             }
-
-            const firstSpace = Object.keys(appData[firstPattern])[0] || null;
+            const firstPattern = patterns[0];
             state = {
-                currentView: 'workspace',
                 currentPattern: firstPattern,
-                activeSpace: firstSpace,
-                currentWord: null, 
-                isEditMode: false,
-                isEditingSpaces: false,
+                activeSpace: (DB.spaces[0] || {}).情境名稱 || '未分類',
+                selectedSubject: 'I',
+                selectedWords: [], 
+                isLoadingAi: false,
             };
+            populatePatternSelector();
             setupEventListeners();
             render();
         }
+
+        async function fetchDataFromGoogleSheet() {
+            // ⚠️ 請將下方的 'YOUR_APPS_SCRIPT_URL' 換成您自己的 Apps Script 網址
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; 
+            
+            try {
+                if (appsScriptUrl === 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec') {
+                     throw new Error("尚未設定 Google Apps Script 網址。");
+                }
+                const response = await fetch(appsScriptUrl);
+                if (!response.ok) throw new Error('網路回應錯誤: ' + response.statusText);
+                const data = await response.json();
+                
+                DB.patterns = data.句型庫 || [];
+                DB.words = data.單字庫 || [];
+                DB.spaces = data.情境庫 || [];
+
+            } catch (error) {
+                console.error("無法從 Google Sheet 讀取資料:", error);
+                displayError(`很抱歉，無法從 Google Sheet 讀取資料。<br>請確認您的 Apps Script 網址是否正確，且共用設定為「知道連結的任何人」。<br><small class="mt-2 block">${error.message}</small>`);
+            }
+        }
+        
+        async function fetchAiDataForWord(wordData) {
+            const appsScriptUrl = 'YOUR_APPS_SCRIPT_URL'; // ⚠️ 請再次確認這裡也填上了您的網址
+            setState({ isLoadingAi: true });
+            
+            try {
+                 const response = await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    mode: 'cors', // Important for cross-origin requests
+                    credentials: 'omit',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ word: wordData.單字, contexts: DB.spaces.map(s => s.情境名稱) })
+                });
+                if (!response.ok) throw new Error('AI API 回應錯誤');
+                const aiData = await response.json();
+                
+                const fullWordData = {
+                    ...wordData,
+                    發音: aiData.pronunciation,
+                    詞性: aiData.partOfSpeech,
+                    情境: aiData.context,
+                    AI老師點評: aiData.aiNotes,
+                    道地例句: aiData.exampleSentences,
+                };
+
+                const placeholders = (state.currentPattern.結構樣板.match(/\[[A-Z0-9_]+\]/g) || []);
+                let newSelectedWords = [...state.selectedWords];
+
+                if (newSelectedWords.length < placeholders.length) {
+                    newSelectedWords.push(fullWordData);
+                } else {
+                    newSelectedWords[newSelectedWords.length - 1] = fullWordData;
+                }
+                
+                setState({ selectedWords: newSelectedWords, isLoadingAi: false });
+
+            } catch(error) {
+                console.error("呼叫 AI 失敗:", error);
+                alert("抱歉，呼叫 AI 老師失敗，請稍後再試。");
+                setState({ isLoadingAi: false });
+            }
+        }
+
+        function setState(newState) { Object.assign(state, newState); render(); }
+
+        function render() {
+            if (!state.currentPattern) return;
+            renderSentenceConstructor();
+            renderWordDetailsCanvas();
+            renderSpaceMenu();
+            renderWordGrid();
+        }
+        
+        function populatePatternSelector() {
+            patternSelector.innerHTML = DB.patterns.map(p => `<option value="${p.句型名稱}">${p.句型名稱}</option>`).join('');
+            patternSelector.value = state.currentPattern.句型名稱;
+        }
+
+        function renderSentenceConstructor() {
+             const { currentPattern, selectedSubject, selectedWords } = state;
+             const subjects = ['I', 'You', 'He', 'She', 'It', 'We', 'They'];
+             
+             let subjectSelectorHTML = `<select id="subject-selector" class="bg-gray-200 rounded px-2 py-1 mx-2 font-bold focus:ring-2 focus:ring-indigo-400 outline-none">
+                ${subjects.map(s => `<option value="${s}" ${s === selectedSubject ? 'selected' : ''}>${s}</option>`).join('')}
+             </select>`;
+
+             const verbMap = {
+                'be': { 'I': 'am', 'He': 'is', 'She': 'is', 'It': 'is', 'default': 'are'},
+                'have': { 'I': 'have', 'He': 'has', 'She': 'has', 'It': 'has', 'default': 'have' }
+             };
+             
+             const getVerb = (verbType, subject) => {
+                return verbMap[verbType]?.[subject] || verbMap[verbType]?.default || verbType;
+             }
+
+             let sentenceHTML = currentPattern.結構樣板;
+             sentenceHTML = sentenceHTML.replace(/\[S\]/g, subjectSelectorHTML);
+             sentenceHTML = sentenceHTML.replace(/\[V_be\]/g, `<span class="text-green-600 font-bold">${getVerb('be', selectedSubject)}</span>`);
+             sentenceHTML = sentenceHTML.replace(/\[V_have\]/g, `<span class="text-green-600 font-bold">${getVerb('have', selectedSubject)}</span>`);
+             
+             const placeholders = (currentPattern.結構樣板.match(/\[(C\d*|O|V_inf)_(\w+)\]/g) || []);
+             placeholders.forEach((ph, i) => {
+                const word = selectedWords[i];
+                sentenceHTML = sentenceHTML.replace(ph, `<span class="text-indigo-600 font-bold px-4 py-2 bg-indigo-50 rounded-md cursor-pointer" data-word-index="${i}">${word ? word.單字 : '...'}</span>`);
+             });
+
+             sentenceConstructor.innerHTML = `<p class="text-2xl lg:text-3xl text-slate-800">${sentenceHTML}</p>`;
+        }
+        
+        function renderWordDetailsCanvas() {
+            const { isLoadingAi, selectedWords } = state;
+            if(isLoadingAi) {
+                wordDetailsCanvas.innerHTML = `<div class="loader"></div>`;
+                return;
+            }
+            if (selectedWords.length > 0) {
+                 wordDetailsCanvas.innerHTML = selectedWords.map(word => `
+                    <div class="word-details-card bg-white border-indigo-500 p-4 rounded-lg shadow">
+                         <h3 class="font-bold text-lg">${word.單字} <span class="text-base font-normal text-slate-500">${word.詞性}</span></h3>
+                         <div class="mt-2"><strong class="font-semibold">發音:</strong> <span class="text-slate-700">${word.發音 || 'N/A'}</span></div>
+                         <div class="mt-2"><strong class="font-semibold">AI 點評:</strong> <span class="text-slate-700">${word.AI老師點評 || 'N/A'}</span></div>
+                         ${word.我的發音筆記圖檔 ? `<div class="mt-2"><strong class="font-semibold">我的筆記:</strong> <img src="${word.我的發音筆記圖檔}" class="mt-1 rounded"/></div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                wordDetailsCanvas.innerHTML = `<div class="text-center text-slate-400"><i class="fas fa-leaf text-2xl mb-2"></i><p>請從下方選擇單字來建構句子</p></div>`;
+            }
+        }
+
+        function renderSpaceMenu() {
+            const { activeSpace } = state;
+            spaceMenu.innerHTML = DB.spaces.map(space => {
+                const wordCount = DB.words.filter(w => w.情境 === space.情境名稱).length;
+                return `<a href="#" class="space-menu-item flex items-center justify-between px-4 py-2 text-slate-600 rounded-md ${space.情境名稱 === activeSpace ? 'active' : ''}" data-space="${space.情境名稱}">
+                    <div class="flex items-center"><i class="${space.icon || 'fa-solid fa-folder'} mr-3 text-lg w-5 text-center"></i><span>${space.情境名稱}</span></div>
+                    <span class="text-xs font-semibold bg-slate-200 rounded-full px-2 py-0.5">${wordCount}</span>
+                </a>`
+            }).join('');
+        }
+
+        function renderWordGrid() {
+            const { currentPattern, activeSpace, selectedWords } = state;
+            const requiredPoSList = (currentPattern.所需詞性 || "").split(';').map(p => p.trim());
+            const nextRequiredPoS = requiredPoSList[selectedWords.length] || requiredPoSList[0];
+
+            document.getElementById('word-list-title').textContent = `${activeSpace}的相關單字 (${nextRequiredPoS})`;
+            const words = DB.words.filter(w => w.詞性 === nextRequiredPoS);
+            
+            if (words.length > 0) {
+                wordGrid.innerHTML = words.map(wordData => {
+                    const isSelected = selectedWords.some(w => w.單字 === wordData.單字);
+                    return `
+                    <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 ${isSelected ? 'border-indigo-500' : 'border-slate-200'}" data-word='${JSON.stringify(wordData)}'>
+                        <div class="p-3 pointer-events-none"><h4 class="font-bold text-slate-800">${wordData.單字}</h4><p class="text-sm text-slate-500">${wordData.詞性}</p></div>
+                    </div>`
+                }).join('');
+            } else {
+                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4"><i class="far fa-surprise"></i></div><h3 class="text-xl font-semibold text-slate-700">喔喔！</h3><p class="text-slate-500 mt-1">在您的單字庫中找不到詞性為「${nextRequiredPoS}」的單字。</p></div>`;
+            }
+        }
+
+        function displayError(message) {
+             document.getElementById('app-container').innerHTML = `<div class="p-4 text-center text-red-500">${message}</div>`;
+        }
+        
+        function setupEventListeners() {
+            spaceMenu.addEventListener('click', e => {
+                e.preventDefault();
+                const spaceMenuItem = e.target.closest('.space-menu-item[data-space]');
+                if (spaceMenuItem) setState({ activeSpace: spaceMenuItem.dataset.space });
+            });
+
+            wordGrid.addEventListener('click', e => {
+                if (state.isLoadingAi) return;
+                const wordCard = e.target.closest('.word-card[data-word]');
+                if (wordCard && wordCard.dataset.word) {
+                    const clickedWord = JSON.parse(wordCard.dataset.word);
+                    const isAlreadySelected = state.selectedWords.some(w => w.單字 === clickedWord.單字);
+                    if (isAlreadySelected) {
+                        setState({ selectedWords: state.selectedWords.filter(w => w.單字 !== clickedWord.單字) });
+                    } else {
+                        fetchAiDataForWord(clickedWord);
+                    }
+                }
+            });
+            
+            sentenceConstructor.addEventListener('change', e => {
+                if(e.target.id === 'subject-selector') {
+                    setState({ selectedSubject: e.target.value });
+                }
+            });
+            
+            sentenceConstructor.addEventListener('click', e => {
+                 const wordSpan = e.target.closest('span[data-word-index]');
+                 if (wordSpan) {
+                    const indexToRemove = parseInt(wordSpan.dataset.wordIndex, 10);
+                    const newSelectedWords = [...state.selectedWords];
+                    newSelectedWords.splice(indexToRemove, 1);
+                    setState({ selectedWords: newSelectedWords });
+                 }
+            });
+
+            patternSelector.addEventListener('change', e => {
+                const selectedPatternName = e.target.value;
+                const newPattern = DB.patterns.find(p => p.句型名稱 === selectedPatternName);
+                if(newPattern) {
+                    setState({ currentPattern: newPattern, selectedWords: [] });
+                }
+            });
+        }
         
         document.addEventListener('DOMContentLoaded', init);
-        
+
     </script>
 </body>
 </html>
-�
