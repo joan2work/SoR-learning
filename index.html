@@ -95,8 +95,7 @@
 
         async function fetchDataFromGoogleSheet() {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyapfRUurjxcjRAZ_GzLJOH0EMiUkcRM334bUEKUOe154-bEKBNwgqpIYZjhpUdF1Ef/exec'; 
-           
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyapfRUurjxcjRAZ_GzLJOH0EMiUkcRM334bUEKUOe154-bEKBNwgqpIYZjhpUdF1Ef/exec';
             try {
                 const response = await fetch(appsScriptUrl);
                 if (!response.ok) throw new Error('網路回應錯誤: ' + response.statusText);
@@ -119,8 +118,7 @@
         
         async function fetchAiDataForWord(wordData) {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyapfRUurjxcjRAZ_GzLJOH0EMiUkcRM334bUEKUOe154-bEKBNwgqpIYZjhpUdF1Ef/exec';
-            
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyapfRUurjxcjRAZ_GzLJOH0EMiUkcRM334bUEKUOe154-bEKBNwgqpIYZjhpUdF1Ef/exec';       
             // 【CHANGED】將isLoadingAi設置在更高層級，避免重複渲染
             if (state.isLoadingAi) return;
             setState({ isLoadingAi: true, selectedWords: [...state.selectedWords, { 單字: wordData.單字, 詞性: wordData.詞性 }] }); // 先放一個佔位符
