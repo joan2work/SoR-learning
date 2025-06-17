@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoR 很有將練習</title>
+    <title>Contextual - 您的情境式英語地圖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -94,7 +94,7 @@
             const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; // ⚠️ 請貼上您的 Apps Script 網址
             
             try {
-                if (appsScriptUrl === 'YOUR_APPS_SCRIPT_URL') { // **FIXED**: Corrected the placeholder URL check
+                if (appsScriptUrl === 'YOUR_APPS_SCRIPT_URL') {
                      throw new Error("尚未設定 Google Apps Script 網址。");
                 }
                 const response = await fetch(appsScriptUrl);
@@ -156,10 +156,7 @@
         function setState(newState) { Object.assign(state, newState); render(); }
 
         function render() {
-            if (!state.currentPattern) {
-                displayError("應用程式狀態錯誤：找不到當前句型。");
-                return;
-            };
+            if (!state.currentPattern) return;
             renderControls();
             renderSentenceConstructor();
             renderWordDetailsCanvas();
@@ -241,8 +238,9 @@
             const { activeSpace } = state;
             spaceMenu.innerHTML = DB.spaces.map(space => {
                 const wordCount = DB.words.filter(w => w.情境 === space.情境名稱).length;
+                const iconClass = space['icon (Font Awesome)'] || 'fa-solid fa-folder'; // **FIXED**
                 return `<a href="#" class="space-menu-item flex items-center justify-between px-4 py-2 text-slate-600 rounded-md ${space.情境名稱 === activeSpace ? 'active' : ''}" data-space="${space.情境名稱}">
-                    <div class="flex items-center"><i class="${space.icon || 'fa-solid fa-folder'} mr-3 text-lg w-5 text-center"></i><span>${space.情境名稱}</span></div>
+                    <div class="flex items-center"><i class="${iconClass} mr-3 text-lg w-5 text-center"></i><span>${space.情境名稱}</span></div>
                     <span class="text-xs font-semibold bg-slate-200 rounded-full px-2 py-0.5">${wordCount}</span>
                 </a>`
             }).join('');
