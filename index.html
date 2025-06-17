@@ -94,7 +94,7 @@
             const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; // ⚠️ 請貼上您的 Apps Script 網址
             
             try {
-                if (appsScriptUrl === 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec') {
+                if (appsScriptUrl === 'YOUR_APPS_SCRIPT_URL') { // **FIXED**: Corrected the placeholder URL check
                      throw new Error("尚未設定 Google Apps Script 網址。");
                 }
                 const response = await fetch(appsScriptUrl);
@@ -156,7 +156,10 @@
         function setState(newState) { Object.assign(state, newState); render(); }
 
         function render() {
-            if (!state.currentPattern) return;
+            if (!state.currentPattern) {
+                displayError("應用程式狀態錯誤：找不到當前句型。");
+                return;
+            };
             renderControls();
             renderSentenceConstructor();
             renderWordDetailsCanvas();
@@ -178,7 +181,9 @@
             </select>`;
             
             controlsContainer.innerHTML = categoryButtonsHTML + patternSelectorHTML;
-            document.getElementById('pattern-selector').value = currentPattern.句型名稱;
+            if (currentPattern) {
+                document.getElementById('pattern-selector').value = currentPattern.句型名稱;
+            }
         }
 
         function renderSentenceConstructor() {
