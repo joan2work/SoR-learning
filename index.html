@@ -96,7 +96,7 @@
         async function fetchDataFromGoogleSheet() {
             // 【重要】請確認此處是您自己的 Apps Script 網址
             const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwe3up4ctXEk69-yBEkbPhsGKSvEsRSrNQLPLloqKppH-vo8wnp8hNxI1PKGDV--KT7/exec'; 
-            
+           
             try {
                 const response = await fetch(appsScriptUrl);
                 if (!response.ok) throw new Error('網路回應錯誤: ' + response.statusText);
