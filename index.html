@@ -95,7 +95,7 @@
 
         async function fetchDataFromGoogleSheet() {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwe3up4ctXEk69-yBEkbPhsGKSvEsRSrNQLPLloqKppH-vo8wnp8hNxI1PKGDV--KT7/exec'; 
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwbixzTF_bajxSjdkuL4tdv4k47T3cb5ss5VxAFQSMPDG_UVDBbW8zl8pdH16PromVC/exec'; 
            
             try {
                 const response = await fetch(appsScriptUrl);
@@ -119,7 +119,7 @@
         
         async function fetchAiDataForWord(wordData) {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwe3up4ctXEk69-yBEkbPhsGKSvEsRSrNQLPLloqKppH-vo8wnp8hNxI1PKGDV--KT7/exec';
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwbixzTF_bajxSjdkuL4tdv4k47T3cb5ss5VxAFQSMPDG_UVDBbW8zl8pdH16PromVC/exec';
             
             // 【CHANGED】將isLoadingAi設置在更高層級，避免重複渲染
             if (state.isLoadingAi) return;
