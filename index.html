@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOR_很有將</title>
+    <title>SoR_很有將練習</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,15 +198,10 @@
                 const space = row.情境;
                 
                 if (!pattern || !space) return;
-
-                if (!newAppData[pattern]) {
-                    newAppData[pattern] = {};
-                }
+                if (!newAppData[pattern]) newAppData[pattern] = {};
                 
                 ALL_SPACES.forEach(s => {
-                    if (!newAppData[pattern][s]) {
-                        newAppData[pattern][s] = [];
-                    }
+                    if (!newAppData[pattern][s]) newAppData[pattern][s] = [];
                 });
                 
                 newAppData[pattern][space].push({
@@ -227,21 +222,11 @@
         }
 
         async function fetchDataFromGoogleSheet() {
-            // ⚠️ 請將下方的 'YOUR_APPS_SCRIPT_URL' 換成您自己的 Apps Script 網址
             const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec'; 
             
             wordDetailsCanvas.innerHTML = `<div class="loader"></div>`;
 
             try {
-                // 如果 URL 尚未替換，則使用模擬資料
-                if (appsScriptUrl === 'https://script.google.com/macros/s/AKfycbyMWFlxE98Wwjl37HuRZfMhcSU3oJEdYsJerZO89eTCaoMDGEP-p3rrE9XbOYcN3xqJ/exec') {
-                    console.warn("偵測到預設網址，將使用模擬資料。請記得替換成您自己的 Apps Script 網址。");
-                    const csvData = `句型,情境,單字,詞性,標籤,發音,AI老師點評,道地例句,我的例句,我的發音筆記,發音筆記圖檔\nI am [adjective],在健身房/運動時,tired,adjective,#感受,/taɪərd/,"非常常見的詞, 用來形容身體或精神上的疲勞。可以用在幾乎任何情境。",I'm too tired to go out tonight.,,,\nI am [adjective],在辦公室,productive,adjective,#效率,/prəˈdʌktɪv/,"用來描述一段時間或某個人有效率地完成了很多工作。是績效評估中的常見詞彙。",It was a very productive meeting.,ㄆㄛ ㄉㄚˋ ㄎ ㄊㄧˇ ㄈ,https://placehold.co/300x150/10b981/ffffff?text=Pronunciation+Image`;
-                    const parsedData = parseCsv(csvData);
-                    processSheetData(parsedData);
-                    return;
-                }
-
                 const response = await fetch(appsScriptUrl);
                 if (!response.ok) {
                     throw new Error('網路回應錯誤: ' + response.statusText);
@@ -282,7 +267,6 @@
             return data;
         }
         
-        // ... 其他函數 ...
         function setState(newState) { Object.assign(state, newState); render(); }
 
         function render() {
@@ -303,6 +287,9 @@
         }
         
         function renderWorkspaceView() {
+            if (!state.currentPattern || !appData[state.currentPattern]) {
+                return;
+            }
             renderSpaceMenu();
             renderWordGrid();
             renderWordDetailCanvas();
@@ -310,7 +297,7 @@
 
         function renderSpaceMenu() {
             const { activeSpace, isEditingSpaces } = state;
-            const spaceIcons = {"在辦公室": "🏢", "在健身房/運動時": "🏋️", "在餐廳/咖啡廳": "☕️", "在家裡": "🏠", "在社交場合": "�", "在超市購物": "🛒", "未分類": "📂"};
+            const spaceIcons = {"在辦公室": "🏢", "在健身房/運動時": "🏋️", "在餐廳/咖啡廳": "☕️", "在家裡": "🏠", "在社交場合": "🤝", "在超市購物": "�", "未分類": "📂"};
             spaceMenu.innerHTML = ALL_SPACES.map(spaceName => `
                 <div class="flex items-center group">
                     <a href="#" class="space-menu-item flex-grow flex items-center px-4 py-2 text-slate-600 rounded-md ${spaceName === activeSpace ? 'active' : ''}" data-space="${spaceName}">
@@ -417,12 +404,22 @@
             }
         }
 
+        // --- Confirmation Modal Logic ---
         function showConfirmation(title, message, onConfirm) {
-            // ... (內容不變)
+            document.getElementById('confirmation-title').textContent = title;
+            document.getElementById('confirmation-message').textContent = message;
+            confirmationModal.classList.remove('hidden');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const okListener = () => { onConfirm(); hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
+            const cancelListener = () => { hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
+            okBtn.addEventListener('click', okListener);
+            cancelBtn.addEventListener('click', cancelListener);
         }
-        function hideConfirmation() {
-            // ... (內容不變)
-        }
+        function hideConfirmation() { confirmationModal.classList.add('hidden'); }
+        
+        // --- Event Handlers & Logic ---
+        function classifyWordToSpace(word) { return wordToSpaceDB[word.toLowerCase()]; }
         
         function setupEventListeners() {
             document.body.addEventListener('click', e => {
@@ -534,8 +531,6 @@
             }
         }
         
-        function classifyWordToSpace(word) { return wordToSpaceDB[word.toLowerCase()]; }
-        
         function saveCard() {
             const { currentPattern, currentWord } = state;
             const originalWord = currentWord?.word;
@@ -588,8 +583,17 @@
         // --- 初始啟動 ---
         async function init() {
             await fetchDataFromGoogleSheet(); // 等待資料載入
-            const firstPattern = Object.keys(appData)[0] || null;
-            const firstSpace = firstPattern ? Object.keys(appData[firstPattern])[0] : null;
+
+            const patterns = Object.keys(appData);
+            const firstPattern = patterns.length > 0 ? patterns[0] : null;
+
+            if (!firstPattern) {
+                console.error("資料載入失敗或為空，無法初始化應用程式。");
+                document.getElementById('app-container').innerHTML = `<div class="p-4 text-center text-red-500">很抱歉，無法從您的 Google Sheet 載入任何有效的句型資料。<br>請檢查您的 Google Sheet 是否有內容，且欄位名稱是否正確。</div>`;
+                return;
+            }
+
+            const firstSpace = Object.keys(appData[firstPattern])[0] || null;
             state = {
                 currentView: 'workspace',
                 currentPattern: firstPattern,
@@ -607,3 +611,4 @@
     </script>
 </body>
 </html>
+�
