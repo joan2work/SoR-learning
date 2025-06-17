@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contextual - 您的情境式英語地圖</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc; /* Tailwind gray-50 */
+        }
+        .space-menu-item, .word-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .word-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .space-menu-item:hover {
+             background-color: #f1f5f9; /* gray-100 */
+             color: #1e293b; /* gray-800 */
+        }
+        .space-menu-item.active {
+            background-color: #eef2ff; /* indigo-50 */
+            color: #4338ca; /* indigo-700 */
+            font-weight: 600;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        #word-details-canvas {
+            transition: all 0.3s ease-in-out;
+            position: relative;
+        }
+        .search-results {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            width: 100%;
+            z-index: 10;
+        }
+        .search-results.active {
+            display: block;
+        }
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="app-container" class="max-w-7xl mx-auto p-4 md:p-6">
+
+        <!-- 主畫面 / 工作區 -->
+        <div data-view="workspace" class="view active">
+            <header class="mb-6 md:mb-8">
+                <div class="flex flex-wrap gap-4 justify-between items-center">
+                    <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual</h1>
+                    <div class="flex-grow max-w-md relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="pattern-search-input" placeholder="搜尋其他句型..." class="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 outline-none">
+                        <button id="clear-search-btn" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 hidden">&times;</button>
+                        <div id="search-results-list" class="search-results mt-1"></div>
+                    </div>
+                    <button id="add-new-pattern-btn" class="bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-800 transition-colors shadow-sm text-sm">
+                        <i class="fas fa-plus mr-1"></i> 新增句型
+                    </button>
+                </div>
+            </header>
+            <main>
+                <!-- 頂部畫布 -->
+                <div id="word-details-canvas" class="bg-white rounded-2xl shadow-lg mb-8 p-6 md:p-8 min-h-[200px] flex items-center justify-center">
+                   <!-- 選擇單字後的詳細內容會顯示在這裡 -->
+                </div>
+
+                <!-- 主要內容區：兩欄式佈局 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                    <!-- 左欄：情境選單 -->
+                    <aside class="md:col-span-1">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-slate-800">情境選單</h3>
+                            <button id="edit-spaces-btn" class="text-sm text-slate-500 hover:text-indigo-600">編輯</button>
+                        </div>
+                        <div id="space-menu" class="space-y-2">
+                            <!-- 情境項目將由 JS 動態生成 -->
+                        </div>
+                    </aside>
+
+                    <!-- 右欄：單字列表 -->
+                    <div class="md:col-span-3">
+                         <div class="flex justify-between items-center mb-4">
+                            <h3 id="word-list-title" class="text-lg font-semibold text-slate-800">相關單字</h3>
+                            <button id="add-new-card-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm">
+                                <i class="fas fa-plus mr-1"></i> 新增單字
+                            </button>
+                        </div>
+                        <div id="word-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                            <!-- 單字卡片將由 JS 動態生成 -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 卡片編輯/新增彈窗 (Modal) -->
+        <div data-view="cardModal" class="view fixed inset-0 bg-black bg-opacity-60 items-center justify-center p-4 z-50">
+            <div id="card-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                 <!-- 卡片編輯表單會顯示在這裡 -->
+            </div>
+        </div>
+        
+        <!-- 通用確認彈窗 -->
+        <div id="confirmation-modal" class="modal-overlay hidden">
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
+                <h3 id="confirmation-title" class="text-lg font-bold mb-4"></h3>
+                <p id="confirmation-message" class="text-slate-600 mb-6"></p>
+                <div class="flex justify-end space-x-3">
+                    <button id="confirm-cancel-btn" class="bg-slate-200 text-slate-800 font-bold py-2 px-5 rounded-lg hover:bg-slate-300">取消</button>
+                    <button id="confirm-ok-btn" class="bg-red-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-red-700">確認</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 資料模型 (Data Model) ---
+        let ALL_SPACES = ["在辦公室", "在健身房/運動時", "在餐廳/咖啡廳", "在家裡", "在社交場合", "在超市購物", "未分類"];
+        let appData = {};
+
+        const fakeAiData = {
+            "tired": { pronunciation: "/taɪərd/", aiNotes: "非常常見的詞，用來形容身體或精神上的疲勞。可以用在幾乎任何情境。", examples: ["I'm too tired to go out tonight.", "She has a tired look on her face."] },
+            "happy": { pronunciation: "/ˈhæpi/", aiNotes: "表達開心、滿足的情緒。是正面情緒中最基礎也最泛用的詞。", examples: ["He was a happy child.", "She looks very happy today."] },
+            "fresh": { pronunciation: "/frɛʃ/", aiNotes: "常用來形容食物新鮮，也可以指空氣清新或想法新穎。", examples: ["These vegetables are very fresh.", "I need some fresh air."] },
+            "confident": { pronunciation: "/ˈkɑːnfɪdənt/", aiNotes: "形容對自己的能力、特質或判斷有信心。在職場和社交場合都非常實用。", examples: ["She is a confident and ambitious woman.", "I'm confident that we can win."] }
+        };
+
+        const wordToSpaceDB = {
+            "productive": "在辦公室", "versatile": "在辦公室", "deadline": "在辦公室",
+            "tired": "在健身房/運動時", "sore": "在健身房/運動時",
+            "delicious": "在餐廳/咖啡廳",
+            "cozy": "在家裡", "relaxed": "在家裡",
+            "social": "在社交場合", "confident": "在社交場合",
+            "fresh": "在超市購物", "ripe": "在超市購物", "aisle": "在超市購物",
+        };
+        
+        // --- DOM 節點 (DOM Elements) ---
+        const views = {
+            workspace: document.querySelector('[data-view="workspace"]'),
+            cardModal: document.querySelector('[data-view="cardModal"]')
+        };
+        const spaceMenu = document.getElementById('space-menu');
+        const wordGrid = document.getElementById('word-grid');
+        const wordDetailsCanvas = document.getElementById('word-details-canvas');
+        const cardModalContent = document.getElementById('card-modal-content');
+        const patternSearchInput = document.getElementById('pattern-search-input');
+        const searchResultsList = document.getElementById('search-results-list');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+        const confirmationModal = document.getElementById('confirmation-modal');
+
+        // --- 應用程式狀態 (Single Source of Truth) ---
+        let state = {};
+
+        // --- 核心函數 ---
+
+        function loadDataFromSheet() {
+            // 模擬從 Google Sheet 讀取的 CSV 內容
+            const csvData = `句型,情境,單字,詞性,標籤,發音,AI老師點評,道地例句,我的例句,我的發音筆記,發音筆記圖檔
+I am [adjective],在健身房/運動時,tired,adjective,#感受,/taɪərd/,"非常常見的詞，用來形容身體或精神上的疲勞。可以用在幾乎任何情境。",I'm too tired to go out tonight.,,,
+I am [adjective],在辦公室,productive,adjective,#效率,/prəˈdʌktɪv/,"用來描述一段時間或某個人有效率地完成了很多工作。是績效評估中的常見詞彙。",It was a very productive meeting.,ㄆㄛ ㄉㄚˋ ㄎ ㄊㄧˇ ㄈ,https://placehold.co/300x150/10b981/ffffff?text=Pronunciation+Image`;
+            
+            const lines = csvData.trim().split('\n');
+            const headers = lines[0].split(',');
+            const data = lines.slice(1).map(line => {
+                const values = line.split(',');
+                return headers.reduce((obj, header, i) => {
+                    obj[header.trim()] = values[i] ? values[i].trim().replace(/^"|"$/g, '') : '';
+                    return obj;
+                }, {});
+            });
+
+            // 將扁平資料轉換為巢狀結構
+            const newAppData = {};
+            data.forEach(row => {
+                const pattern = row.句型;
+                const space = row.情境;
+                
+                if (!pattern || !space) return;
+
+                if (!newAppData[pattern]) {
+                    newAppData[pattern] = {};
+                }
+                
+                ALL_SPACES.forEach(s => {
+                    if (!newAppData[pattern][s]) {
+                        newAppData[pattern][s] = [];
+                    }
+                });
+                
+                newAppData[pattern][space].push({
+                    word: row.單字,
+                    partOfSpeech: row.詞性,
+                    tags: row.標籤 ? row.標籤.split(';').filter(t => t) : [],
+                    imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=${row.單字}`,
+                    myImageUrl: "",
+                    pronunciation: row.發音,
+                    myPronunciation: row.我的發音筆記,
+                    myPronunciationImageUrl: row.發音筆記圖檔,
+                    aiNotes: row.AI老師點評,
+                    examples: row.道地例句 ? row.道地例句.split(';').filter(t => t) : [],
+                    myExamples: row.我的例句 ? row.我的例句.split(';').filter(t => t) : []
+                });
+            });
+            appData = newAppData;
+        }
+
+        function setState(newState) { Object.assign(state, newState); render(); }
+
+        function render() {
+            Object.keys(views).forEach(viewKey => {
+                if(views[viewKey]) {
+                   views[viewKey].style.display = viewKey === state.currentView ? (viewKey === 'cardModal' ? 'flex' : 'block') : 'none';
+                }
+            });
+            switch(state.currentView) {
+                case 'workspace': renderWorkspaceView(); break;
+                case 'cardModal': renderCardModal(); break;
+            }
+        }
+        
+        function renderWorkspaceView() {
+            renderSpaceMenu();
+            renderWordGrid();
+            renderWordDetailCanvas();
+        }
+
+        function renderSpaceMenu() {
+            const { activeSpace, isEditingSpaces } = state;
+            const spaceIcons = {"在辦公室": "🏢", "在健身房/運動時": "🏋️", "在餐廳/咖啡廳": "☕️", "在家裡": "🏠", "在社交場合": "🤝", "在超市購物": "🛒", "未分類": "📂"};
+            spaceMenu.innerHTML = ALL_SPACES.map(spaceName => `
+                <div class="flex items-center group">
+                    <a href="#" class="space-menu-item flex-grow flex items-center px-4 py-2 text-slate-600 rounded-md ${spaceName === activeSpace ? 'active' : ''}" data-space="${spaceName}">
+                        <span class="mr-3 text-lg">${spaceIcons[spaceName] || '📁'}</span>
+                        <span>${spaceName}</span>
+                    </a>
+                    ${isEditingSpaces && spaceName !== '未分類' ? `<button data-action="delete-space" data-space="${spaceName}" class="ml-2 text-slate-400 hover:text-red-500 hidden group-hover:block">&times;</button>` : ''}
+                </div>
+            `).join('');
+            
+            if (isEditingSpaces) {
+                spaceMenu.innerHTML += `
+                    <div class="mt-2">
+                        <input type="text" id="new-space-input" placeholder="新增情境..." class="w-full text-sm p-1 border rounded-md">
+                        <button data-action="add-space" class="w-full mt-1 text-sm bg-slate-600 text-white rounded-md py-1">新增</button>
+                    </div>`;
+            }
+        }
+
+        function renderWordGrid() {
+            const { currentPattern, activeSpace } = state;
+            if (!appData[currentPattern] || !appData[currentPattern][activeSpace]) return;
+            document.getElementById('word-list-title').textContent = `${activeSpace}的相關單字`;
+            const words = appData[currentPattern][activeSpace];
+            
+            if (words && words.length > 0) {
+                wordGrid.innerHTML = words.map(wordData => `
+                    <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 ${state.currentWord?.word === wordData.word ? 'border-indigo-500' : 'border-slate-200'}" data-word="${wordData.word}">
+                        <img src="${wordData.myImageUrl || wordData.imageUrl}" alt="${wordData.word}" class="w-full h-24 object-cover pointer-events-none" onerror="this.onerror=null;this.src='https://placehold.co/600x400/cccccc/ffffff?text=Image+Error';">
+                        <div class="p-3 pointer-events-none"><h4 class="font-bold text-slate-800">${wordData.word}</h4><p class="text-sm text-slate-500">${wordData.partOfSpeech}</p></div>
+                    </div>`).join('');
+            } else {
+                 wordGrid.innerHTML = `<div class="col-span-full text-center py-12 px-4"><div class="text-5xl text-slate-400 mb-4">📂</div><h3 class="text-xl font-semibold text-slate-700">這個情境還沒有單字</h3></div>`;
+            }
+        }
+
+        function renderWordDetailCanvas() {
+            const { currentPattern, currentWord } = state;
+            const patternHTML = currentPattern.replace(/\[(\w+)\]/g, `<span class="text-indigo-600 font-bold">${currentWord ? currentWord.word : '...'}</span>`);
+            
+            let canvasContentHTML = ``;
+            if (currentWord) {
+                 const pronunciationNoteHTML = currentWord.myPronunciationImageUrl 
+                    ? `<img src="${currentWord.myPronunciationImageUrl}" alt="發音筆記圖檔" class="mt-2 rounded-md max-w-full h-auto">`
+                    : (currentWord.myPronunciation || '無');
+
+                canvasContentHTML = `
+                <div class="flex gap-4 absolute top-4 right-4">
+                  <button data-action="edit-word" class="text-lg text-slate-400 hover:text-indigo-600"><i class="fas fa-pencil-alt"></i></button>
+                  <button data-action="delete-word" class="text-lg text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                  <button data-action="clear-canvas" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button>
+                </div>
+                <div class="w-full text-center">
+                    <p class="text-3xl lg:text-4xl text-slate-800 mt-1">${patternHTML}</p>
+                    <div class="mt-8 pt-6 border-t grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 text-left">
+                         <div class="space-y-4"><h3 class="font-bold text-lg">${currentWord.word} <span class="text-base font-normal text-slate-500">${currentWord.partOfSpeech}</span></h3><div><label class="font-semibold text-slate-800">發音</label><div class="mt-2 bg-slate-50 p-3 rounded-lg"><span class="text-slate-700">${currentWord.pronunciation}</span></div></div><div><label class="font-semibold text-slate-800">我的發音筆記</label><div class="mt-2 text-indigo-700 font-semibold">${pronunciationNoteHTML}</div></div></div>
+                        <div class="space-y-4"><div><label class="font-semibold text-slate-800">💡 AI 老師點評</label><div class="mt-2 bg-amber-50 border-l-4 border-amber-400 p-3 rounded-r-lg text-amber-900 text-sm">${currentWord.aiNotes}</div></div><div><label class="font-semibold text-slate-800">✍️ 我的例句</label><div class="mt-2 text-indigo-800 bg-indigo-50 p-3 rounded-lg">${currentWord.myExamples.join('<br>') || '無'}</div></div></div>
+                    </div>
+                </div>`;
+            } else {
+                canvasContentHTML = `<div class="text-center text-slate-500">
+                    <p class="text-3xl mb-4">${currentPattern.replace(/\[(\w+)\]/g, '<span class="text-slate-400">[$1]</span>')}</p>
+                    <i class="fas fa-hand-pointer text-3xl mb-2"></i>
+                    <p>請從下方選擇一張單字卡來查看詳細資訊</p>
+                </div>`;
+            }
+            wordDetailsCanvas.innerHTML = canvasContentHTML;
+        }
+        
+        function renderCardModal() {
+            const { activeSpace, currentWord, isEditMode } = state;
+            let cardData = isEditMode && !currentWord ? 
+                { word: "", partOfSpeech: "adjective", tags: [], imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=New+Word`, myImageUrl: "", pronunciation: "", myPronunciation: "", myPronunciationImageUrl: "", aiNotes: "AI 點評將在您儲存後生成...", examples: [], myExamples: [] } : 
+                {...currentWord}; 
+
+            cardModalContent.innerHTML = `<div class="p-6 md:p-8">
+                    <div class="flex justify-between items-start mb-4"><h2 class="text-2xl font-bold">${isEditMode && !currentWord ? '新增單字卡' : '編輯單字卡'}</h2><button data-action="close-card" class="text-2xl text-slate-400 hover:text-slate-600">&times;</button></div>
+                    <div class="space-y-4">
+                        <div><label class="font-semibold">單字</label><input type="text" id="edit-word" value="${cardData.word}" placeholder="請輸入單字" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500"></div>
+                        <div><label class="font-semibold">歸屬情境</label>
+                             <select id="edit-space" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">
+                                <option value="ai" ${!currentWord ? 'selected' : ''}>AI 老師分類 (建議)</option>
+                                ${ALL_SPACES.map(space => `<option value="${space}" ${currentWord && space === activeSpace ? 'selected' : ''}>${space}</option>`).join('')}
+                             </select>
+                        </div>
+                        <div><label class="font-semibold">發音 (音標)</label><input type="text" id="edit-pronunciation" value="${cardData.pronunciation}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
+                        <div><label class="font-semibold">我的發音筆記 (注音)</label><input type="text" id="edit-myPronunciation" value="${cardData.myPronunciation}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
+                        <div><label class="font-semibold">我的發音筆記 (圖檔網址)</label><input type="text" id="edit-myPronunciationImageUrl" value="${cardData.myPronunciationImageUrl || ''}" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm"></div>
+                        <div><label class="font-semibold">AI 老師點評</label><textarea id="edit-aiNotes" rows="3" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">${cardData.aiNotes}</textarea></div>
+                        <div><label class="font-semibold">我的例句 (一行一個)</label><textarea id="edit-myExamples" rows="3" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm">${cardData.myExamples.join('\n')}</textarea></div>
+                    </div>
+                    <div class="mt-8 pt-4 border-t flex justify-end"><button data-action="save-card" class="bg-indigo-600 text-white font-bold py-2 px-5 rounded-lg hover:bg-indigo-700">儲存</button></div>
+                </div>`;
+            
+            if (isEditMode && !currentWord) {
+                document.getElementById('edit-word').addEventListener('blur', (e) => {
+                    const enteredWord = e.target.value.trim().toLowerCase();
+                    const data = fakeAiData[enteredWord];
+                    if(data) {
+                        document.getElementById('edit-pronunciation').value = data.pronunciation;
+                        document.getElementById('edit-aiNotes').value = data.aiNotes;
+                    }
+                });
+            }
+        }
+
+        // --- Confirmation Modal Logic ---
+        function showConfirmation(title, message, onConfirm) {
+            document.getElementById('confirmation-title').textContent = title;
+            document.getElementById('confirmation-message').textContent = message;
+            confirmationModal.classList.remove('hidden');
+            const okBtn = document.getElementById('confirm-ok-btn');
+            const cancelBtn = document.getElementById('confirm-cancel-btn');
+            const okListener = () => { onConfirm(); hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
+            const cancelListener = () => { hideConfirmation(); okBtn.removeEventListener('click', okListener); cancelBtn.removeEventListener('click', cancelListener); };
+            okBtn.addEventListener('click', okListener);
+            cancelBtn.addEventListener('click', cancelListener);
+        }
+        function hideConfirmation() { confirmationModal.classList.add('hidden'); }
+        
+        // --- Event Handlers & Logic ---
+        function classifyWordToSpace(word) { return wordToSpaceDB[word.toLowerCase()]; }
+        
+        function setupEventListeners() {
+            spaceMenu.addEventListener('click', e => {
+                e.preventDefault();
+                const spaceMenuItem = e.target.closest('.space-menu-item[data-space]');
+                const deleteBtn = e.target.closest('button[data-action="delete-space"]');
+                const addBtn = e.target.closest('button[data-action="add-space"]');
+
+                if (spaceMenuItem) {
+                    setState({ activeSpace: spaceMenuItem.dataset.space, currentWord: null });
+                } else if (deleteBtn) {
+                    const spaceToDelete = deleteBtn.dataset.space;
+                    showConfirmation('刪除情境', `確定要刪除 "${spaceToDelete}" 這個情境嗎？此情境的單字將被移至「未分類」。`, () => {
+                        ALL_SPACES = ALL_SPACES.filter(s => s !== spaceToDelete);
+                        Object.keys(appData).forEach(pattern => {
+                            const wordsToMove = appData[pattern][spaceToDelete] || [];
+                            if(!appData[pattern]['未分類']) appData[pattern]['未分類'] = [];
+                            appData[pattern]['未分類'].push(...wordsToMove);
+                            delete appData[pattern][spaceToDelete];
+                        });
+                        setState({ activeSpace: '未分類', currentWord: null });
+                    });
+                } else if (addBtn) {
+                    const newSpaceInput = document.getElementById('new-space-input');
+                    const newSpaceName = newSpaceInput.value.trim();
+                    if (newSpaceName && !ALL_SPACES.includes(newSpaceName)) {
+                        ALL_SPACES.push(newSpaceName);
+                        normalizeAppData();
+                        setState({ isEditingSpaces: false });
+                    } else if (!newSpaceName) { alert('請輸入情境名稱！'); } 
+                    else { alert(`情境 "${newSpaceName}" 已經存在！`); }
+                }
+            });
+
+            wordGrid.addEventListener('click', e => {
+                const wordCard = e.target.closest('.word-card[data-word]');
+                if (wordCard && wordCard.dataset.word) {
+                    const wordName = wordCard.dataset.word;
+                    const { currentPattern, activeSpace } = state;
+                    const wordObject = appData[currentPattern][activeSpace].find(w => w.word === wordName);
+                    if (wordObject) { setState({ currentWord: wordObject }); }
+                }
+            });
+
+            wordDetailsCanvas.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if(!button || !button.dataset.action) return;
+                switch(button.dataset.action) {
+                    case 'clear-canvas': setState({ currentWord: null }); break;
+                    case 'edit-word': setState({ currentView: 'cardModal', isEditMode: true }); break;
+                    case 'delete-word':
+                        showConfirmation('刪除單字', `確定要刪除單字 "${state.currentWord.word}" 嗎？`, () => {
+                            const { currentPattern, activeSpace, currentWord } = state;
+                            const wordIndex = appData[currentPattern][activeSpace].findIndex(w => w.word === currentWord.word);
+                            if (wordIndex > -1) { appData[currentPattern][activeSpace].splice(wordIndex, 1); }
+                            setState({ currentWord: null });
+                        });
+                        break;
+                }
+            });
+
+            document.getElementById('edit-spaces-btn').addEventListener('click', () => setState({ isEditingSpaces: !state.isEditingSpaces }));
+            document.getElementById('add-new-card-btn').addEventListener('click', () => setState({ currentView: 'cardModal', isEditMode: true, currentWord: null }));
+            
+            cardModalContent.addEventListener('click', e => {
+                const button = e.target.closest('button');
+                if(!button || !button.dataset.action) return;
+                switch (button.dataset.action) {
+                    case 'close-card': setState({ currentView: 'workspace' }); break;
+                    case 'save-card': saveCard(); break;
+                }
+            });
+
+            views.cardModal.addEventListener('click', (e) => {
+                if (e.target === views.cardModal) { setState({ currentView: 'workspace' }); }
+            });
+
+            patternSearchInput.addEventListener('keyup', () => {
+                const searchTerm = patternSearchInput.value.toLowerCase();
+                clearSearchBtn.classList.toggle('hidden', !searchTerm);
+                const results = Object.keys(appData).filter(p => p.toLowerCase().includes(searchTerm));
+                searchResultsList.style.display = results.length > 0 && searchTerm ? 'block' : 'none';
+                searchResultsList.innerHTML = results.map(p => `<div class="p-2 hover:bg-slate-100 cursor-pointer search-result-item" data-pattern="${p}">${p} <button data-action="delete-pattern" data-pattern="${p}" class="float-right text-slate-400 hover:text-red-500">&times;</button></div>`).join('');
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                patternSearchInput.value = '';
+                clearSearchBtn.classList.add('hidden');
+                searchResultsList.style.display = 'none';
+                const defaultPattern = Object.keys(appData)[0];
+                setState({ currentPattern: defaultPattern, activeSpace: Object.keys(appData[defaultPattern])[0], currentWord: null });
+            });
+
+            searchResultsList.addEventListener('click', e => {
+                const resultItem = e.target.closest('.search-result-item');
+                const deleteBtn = e.target.closest('button[data-action="delete-pattern"]');
+
+                if(deleteBtn) {
+                    e.stopPropagation();
+                    const patternToDelete = deleteBtn.dataset.pattern;
+                    showConfirmation('刪除句型', `確定要刪除句型 "${patternToDelete}" 嗎？`, () => {
+                        delete appData[patternToDelete];
+                        searchResultsList.style.display = 'none';
+                        if (state.currentPattern === patternToDelete) {
+                            const defaultPattern = Object.keys(appData)[0] || null;
+                            if (defaultPattern) { setState({ currentPattern: defaultPattern, activeSpace: Object.keys(appData[defaultPattern])[0], currentWord: null });
+                            } else { /* handle no patterns left */ }
+                        } else { render(); }
+                    });
+                } else if (resultItem) {
+                    const pattern = resultItem.dataset.pattern;
+                    patternSearchInput.value = '';
+                    searchResultsList.style.display = 'none';
+                    clearSearchBtn.classList.add('hidden');
+                    setState({ currentPattern: pattern, activeSpace: Object.keys(appData[pattern])[0], currentWord: null });
+                }
+            });
+
+            document.addEventListener('click', e => {
+                if (!e.target.closest('.relative')) { searchResultsList.style.display = 'none'; }
+            });
+        }
+        
+        function saveCard() {
+            const { currentPattern, currentWord } = state;
+            const originalWord = currentWord?.word;
+            const newWord = document.getElementById('edit-word').value.trim();
+
+            if (!newWord) { alert('「單字」為必填欄位！'); return; }
+            
+            const spaceDropdown = document.getElementById('edit-space');
+            let targetSpace = spaceDropdown.value;
+
+            if(targetSpace === 'ai') {
+                targetSpace = classifyWordToSpace(newWord) || '未分類';
+            }
+
+            if (!originalWord || originalWord !== newWord) {
+                 if (appData[currentPattern][targetSpace].some(w => w.word === newWord)) {
+                    alert(`單字 "${newWord}" 在情境 "${targetSpace}" 中已經存在！`); return;
+                 }
+            }
+            
+            const formData = {
+                word: newWord, myImageUrl: "", 
+                pronunciation: document.getElementById('edit-pronunciation').value.trim(),
+                myPronunciation: document.getElementById('edit-myPronunciation').value.trim(),
+                myPronunciationImageUrl: document.getElementById('edit-myPronunciationImageUrl').value.trim(),
+                aiNotes: document.getElementById('edit-aiNotes').value.trim(),
+                myExamples: document.getElementById('edit-myExamples').value.trim().split('\n').filter(line => line.trim() !== ''),
+            };
+
+            if (originalWord) { 
+                const wordIndex = appData[currentPattern][state.activeSpace].findIndex(w => w.word === originalWord);
+                if (wordIndex !== -1) {
+                    const oldCardData = appData[currentPattern][state.activeSpace][wordIndex];
+                    const cardToSave = { ...oldCardData, ...formData };
+                    if (targetSpace !== state.activeSpace) {
+                        appData[currentPattern][state.activeSpace].splice(wordIndex, 1);
+                        appData[currentPattern][targetSpace].push(cardToSave);
+                    } else {
+                        appData[currentPattern][state.activeSpace][wordIndex] = cardToSave;
+                    }
+                }
+            } else { 
+                const newCardData = { ...formData, partOfSpeech: 'adjective', tags: [`#${targetSpace}`], imageUrl: `https://placehold.co/600x400/cccccc/ffffff?text=${newWord || 'New'}`, examples: fakeAiData[newWord.toLowerCase()]?.examples || [] };
+                appData[currentPattern][targetSpace].push(newCardData);
+            }
+            
+            setState({ currentView: 'workspace', activeSpace: targetSpace, currentWord: null, isEditMode: false });
+        }
+
+        // --- 初始啟動 ---
+        function init() {
+            loadDataFromSheet();
+            const firstPattern = Object.keys(appData)[0];
+            const firstSpace = firstPattern ? Object.keys(appData[firstPattern])[0] : null;
+            state = {
+                currentView: 'workspace',
+                currentPattern: firstPattern,
+                activeSpace: firstSpace,
+                currentWord: null, 
+                isEditMode: false,
+                isEditingSpaces: false,
+            };
+            setupEventListeners();
+            render();
+        }
+        
+        init();
+
+    </script>
+</body>
+</html>
