@@ -193,7 +193,6 @@
         
         function renderWordDetailsCanvas() {
             const { selectedWords } = state;
-            // 現在，我們顯示所有被選中的單字的卡片，因為所有資料都已在 Sheet 中
             wordDetailsCanvas.innerHTML = selectedWords
                 .map(word => `
                 <div class="word-details-card bg-white p-4 rounded-lg shadow-md border-l-4 border-indigo-500 animate-fade-in">
@@ -218,7 +217,6 @@
             ).join('');
         }
         
-        // --- 【已更新】加入了情境篩選邏輯 ---
         function renderWordGrid() {
             const { currentPattern, selectedWords, activeSpace } = state;
             if (!currentPattern) return; 
@@ -235,10 +233,8 @@
             const nextRequiredPoS = requiredPoSList[nextPlaceholderIndex];
             document.getElementById('word-list-title').textContent = `請選擇一個「${nextRequiredPoS}」`;
 
-            // 1. 先根據「詞性」篩選
             const wordsByPoS = DB.words.filter(w => w.詞性 === nextRequiredPoS);
 
-            // 2. 再根據「情境」做第二次篩選
             const words = wordsByPoS.filter(word => {
                 const wordContexts = (word.情境 || "").split(';').map(c => c.trim());
                 if (wordContexts.length === 0 || wordContexts[0] === "") {
@@ -251,8 +247,13 @@
                 wordGrid.innerHTML = words.map(wordData => {
                     const isSelected = selectedWords.some(w => w.單字 === wordData.單字);
                     if (isSelected) return '';
+                    
+                    // --- 【已修正】對 JSON 字串進行編碼，防止特殊字元破壞 HTML ---
+                    const wordDataString = JSON.stringify(wordData);
+                    const encodedWordDataString = wordDataString.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+
                     return `
-                    <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 border-slate-200" data-word='${JSON.stringify(wordData)}'>
+                    <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 border-slate-200" data-word='${encodedWordDataString}'>
                         <div class="p-3">
                           <h4 class="font-bold text-slate-800">${wordData.單字}</h4>
                           <p class="text-sm text-slate-500">${wordData.詞性}</p>
@@ -273,7 +274,6 @@
                 e.preventDefault();
                 const spaceMenuItem = e.target.closest('.space-menu-item[data-space]');
                 if (spaceMenuItem) {
-                    // 切換情境時，清空已選單字
                     setState({ activeSpace: spaceMenuItem.dataset.space, selectedWords: [] });
                 }
             });
