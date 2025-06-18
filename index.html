@@ -248,9 +248,10 @@
                     const isSelected = selectedWords.some(w => w.單字 === wordData.單字);
                     if (isSelected) return '';
                     
-                    // --- 【已修正】對 JSON 字串進行編碼，防止特殊字元破壞 HTML ---
+                    // --- 【最終修正】只對單引號進行編碼 ---
                     const wordDataString = JSON.stringify(wordData);
-                    const encodedWordDataString = wordDataString.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+                    // 只需轉換會破壞 data-word='...' 屬性的單引號即可
+                    const encodedWordDataString = wordDataString.replace(/'/g, '&#39;');
 
                     return `
                     <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 border-slate-200" data-word='${encodedWordDataString}'>
