@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contextual - 您的情境式英語地圖</title>
+    <title>很有將</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -26,7 +26,7 @@
     <div id="app-container" class="max-w-7xl mx-auto p-4 md:p-6">
         <header class="mb-6 md:mb-8">
             <div class="flex flex-wrap gap-4 justify-between items-center">
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Contextual AI</h1>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">很有將</h1>
                  <div id="controls-container" class="flex items-center gap-2 flex-wrap">
                     </div>
             </div>
@@ -95,7 +95,7 @@
 
         async function fetchDataFromGoogleSheet() {
             // 【重要】請確認此處是您自己的 Apps Script 網址
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec'; 
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyuHXdx188Jb0rYpUNPR61wlpqea3a10gMMGlDh9a5aQzYFxO1hehy7YZ791tB3kksI5Q/exec'; 
             
             try {
                 const response = await fetch(appsScriptUrl);
@@ -124,7 +124,7 @@
             // 1. 先設定為讀取狀態，這會觸發 render() 來顯示讀取動畫
             setState({ isLoadingAi: true });
             
-            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbwF5GZk8esLz41lpgDTIe7KegVQXLJXoSFImgQMR8OnIRcXKydJuNcUOY5zuDxpKlMQ6Q/exec';
+            const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyuHXdx188Jb0rYpUNPR61wlpqea3a10gMMGlDh9a5aQzYFxO1hehy7YZ791tB3kksI5Q/exec';
 
             try {
                 // 2. 執行網路請求
