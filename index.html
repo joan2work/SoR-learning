@@ -200,7 +200,7 @@
                      <div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">發音:</strong> <span class="text-slate-700">${word.發音 || 'N/A'}</span></div>
                      <div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">AI 點評 (${state.activeSpace}):</strong> <span class="text-slate-700">${word['AI 點評'] || 'N/A'}</span></div>
                      ${word.道地例句 ? `<div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">道地例句:</strong> <span class="text-slate-700">${word.道地例句}</span></div>` : ''}
-                     ${word['我的發音筆記圖檔'] ? `<div class="mt-4 pt-2 border-t"><strong class="font-semibold text-sm text-slate-600">我的筆記:</strong> <img src="${word['我的發音筆記圖檔']}" class="mt-1 rounded mx-auto w-[350px] h-[350px] object-cover"/></div>` : ''}
+                     ${word['我的發音筆記圖檔'] ? `<div class="mt-4 pt-2 border-t"><strong class="font-semibold text-sm text-slate-600">我的筆記:</strong> <img src="${word['我的發音筆記圖檔']}" class="mt-1 rounded w-[200px] h-[200px] object-cover"/></div>` : ''}
                 </div>
             `).join('');
         }
