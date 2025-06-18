@@ -35,7 +35,7 @@
         </header>
         <main>
             <div id="sentence-constructor" class="bg-white rounded-2xl shadow-lg mb-8 p-6 md:p-8 flex items-center justify-center text-center min-h-[120px]"></div>
-            <div id="word-details-canvas" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"></div>
+            <div id="word-details-canvas" class="grid grid-cols-1 gap-6 mb-8"></div>
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <aside class="md:col-span-1">
                     <h3 class="text-lg font-semibold text-slate-800 mb-4">選擇主題情境</h3>
@@ -200,7 +200,7 @@
                      <div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">發音:</strong> <span class="text-slate-700">${word.發音 || 'N/A'}</span></div>
                      <div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">AI 點評 (${state.activeSpace}):</strong> <span class="text-slate-700">${word['AI 點評'] || 'N/A'}</span></div>
                      ${word.道地例句 ? `<div class="mt-2 text-sm"><strong class="font-semibold text-slate-600">道地例句:</strong> <span class="text-slate-700">${word.道地例句}</span></div>` : ''}
-                     ${word['我的發音筆記圖檔'] ? `<div class="mt-4 pt-2 border-t"><strong class="font-semibold text-sm text-slate-600">我的筆記:</strong> <img src="${word['我的發音筆記圖檔']}" class="mt-1 rounded w-full"/></div>` : ''}
+                     ${word['我的發音筆記圖檔'] ? `<div class="mt-4 pt-2 border-t"><strong class="font-semibold text-sm text-slate-600">我的筆記:</strong> <img src="${word['我的發音筆記圖檔']}" class="mt-1 rounded mx-auto w-[350px] h-[350px] object-cover"/></div>` : ''}
                 </div>
             `).join('');
         }
