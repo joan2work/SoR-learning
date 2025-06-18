@@ -19,6 +19,8 @@
         #word-details-canvas { transition: all 0.3s ease-in-out; position: relative; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 2rem auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="text-slate-800">
@@ -116,18 +118,14 @@
             }
         }
         
-        // --- 【已重構】修正了 setState 和 fetch 的執行順序 ---
         async function fetchAiDataForWord(wordData) {
-            // 防止在AI請求期間重複點擊
             if (state.isLoadingAi) return;
 
-            // 1. 先設定為讀取狀態，這會觸發 render() 來顯示讀取動畫
             setState({ isLoadingAi: true });
             
             const appsScriptUrl = 'https://script.google.com/macros/s/AKfycbyuHXdx188Jb0rYpUNPR61wlpqea3a10gMMGlDh9a5aQzYFxO1hehy7YZ791tB3kksI5Q/exec';
 
             try {
-                // 2. 執行網路請求
                 const response = await fetch(appsScriptUrl, {
                     method: 'POST',
                     mode: 'cors', 
@@ -142,9 +140,8 @@
                 if (!response.ok) throw new Error('AI API 回應錯誤：' + response.status);
                 
                 const aiData = await response.json();
-                 if (aiData.error) throw new Error(aiData.error);
+                if (aiData.error) throw new Error(aiData.error);
                 
-                // 3. 組合完整的單字資料 (包含從 Sheet 來的和從 AI 來的)
                 const fullWordData = {
                     ...wordData,
                     發音: aiData.pronunciation,
@@ -153,7 +150,6 @@
                     道地例句: aiData.exampleSentences,
                 };
                 
-                // 4. 成功後，將完整資料加入陣列，並關閉讀取狀態
                 setState({
                     isLoadingAi: false,
                     selectedWords: [...state.selectedWords, fullWordData]
@@ -162,7 +158,6 @@
             } catch(error) {
                 console.error("呼叫 AI 失敗:", error);
                 alert("抱歉，呼叫 AI 老師失敗，請檢查 Console 中的錯誤訊息。");
-                // 5. 失敗後，僅關閉讀取狀態，不做其他事
                 setState({ isLoadingAi: false });
             }
         }
@@ -209,7 +204,6 @@
             document.getElementById('pattern-selector').value = currentPattern.句型名稱;
         }
 
-        // --- 【已重構】修正了讀取動畫的顯示邏輯 ---
         function renderSentenceConstructor() {
              const { currentPattern, selectedSubject, selectedWords, isLoadingAi } = state;
              const subjects = ['I', 'You', 'He', 'She', 'It', 'We', 'They'];
@@ -234,13 +228,10 @@
              
              placeholders.forEach((ph, i) => {
                 let wordDisplay;
-                // 情況1：這個位置的單字已經選好
                 if (i < selectedWords.length) {
                     wordDisplay = selectedWords[i].單字;
-                // 情況2：這是下一個要選的單字，並且正在讀取 AI 資料
                 } else if (i === selectedWords.length && isLoadingAi) {
                     wordDisplay = `<span class="loader !w-6 !h-6 !border-2 inline-block"></span>`;
-                // 情況3：這是未來才要選的單字
                 } else {
                     wordDisplay = '...';
                 }
@@ -252,7 +243,6 @@
         
         function renderWordDetailsCanvas() {
             const { selectedWords } = state;
-            // 只顯示有完整 AI 資料的卡片 (用`發音`欄位來判斷)
             wordDetailsCanvas.innerHTML = selectedWords.filter(word => word.發音) 
                 .map(word => `
                 <div class="word-details-card bg-white p-4 rounded-lg shadow-md border-l-4 border-indigo-500 animate-fade-in">
@@ -296,7 +286,7 @@
             if (words.length > 0) {
                 wordGrid.innerHTML = words.map(wordData => {
                     const isSelected = selectedWords.some(w => w.單字 === wordData.單字);
-                    if (isSelected) return ''; // 如果單字已被選，就不再顯示在待選區
+                    if (isSelected) return '';
                     return `
                     <div class="word-card bg-white rounded-lg shadow-sm cursor-pointer overflow-hidden border-2 border-slate-200" data-word='${JSON.stringify(wordData)}'>
                         <div class="p-3 pointer-events-none">
@@ -346,8 +336,9 @@
             sentenceConstructor.addEventListener('click', e => {
                  const wordSpan = e.target.closest('span[data-word-index]');
                  if (wordSpan) {
-                    // 點擊已選單字來移除它
-                    // 為了簡化，我們先不實作這個功能，專注讓主流程正常
+                    const indexToRemove = parseInt(wordSpan.dataset.wordIndex, 10);
+                    const newSelectedWords = state.selectedWords.filter((_, index) => index !== indexToRemove);
+                    setState({ selectedWords: newSelectedWords });
                  }
             });
             
